@@ -46,7 +46,7 @@ unsigned long long bitmap_black_pawns(Board* bord) {
 	unsigned long long captures = ((bpawns & (~border)) >> 7 | (bpawns & (~border)) >> 9 | (bpawns & H) >> 7 | (bpawns & A) >> 9); // all capturing moves a pawn can do
 	unsigned long long enPassent = (~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))); // all squares that are able to be en passented
 	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
-	return (captures & bord->white); //(nonCaptures | (captures & bord->white) | (enPassent & black & captures)) & black;
+	return (nonCaptures | (captures & bord->white) | (enPassent & black & captures)) & black;
 }
 
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
