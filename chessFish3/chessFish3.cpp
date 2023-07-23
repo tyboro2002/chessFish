@@ -1,0 +1,143 @@
+﻿// chessFish3.cpp : Defines the entry point for the application.
+//
+
+#include "chessFish3.h"
+#include "game.h"
+
+using namespace std;
+
+int main()
+{
+	Board bord;
+	Move move;
+	setup(&bord);
+	printBoard(&bord);
+
+
+	move.src = E2;
+	move.dst = E4;
+	move.special = SPECIAL_WPAWN_2SQUARES;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = E7;
+	move.dst = E5;
+	move.special = SPECIAL_BPAWN_2SQUARES;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = B2;
+	move.dst = B4;
+	move.special = SPECIAL_WPAWN_2SQUARES;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = F7;
+	move.dst = F6;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = B4;
+	move.dst = B5;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = C7;
+	move.dst = C5;
+	move.special = SPECIAL_BPAWN_2SQUARES;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = B5;
+	move.dst = C6;
+	move.special = SPECIAL_WEN_PASSANT;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = G7;
+	move.dst = G5;
+	move.special = SPECIAL_BPAWN_2SQUARES;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = A2;
+	move.dst = A3;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = G5;
+	move.dst = G4;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = H2;
+	move.dst = H4;
+	move.special = SPECIAL_WPAWN_2SQUARES;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = G4;
+	move.dst = H3;
+	move.special = SPECIAL_BEN_PASSANT;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = G1;
+	move.dst = F3;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = G8;
+	move.dst = H6;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = F1;
+	move.dst = A6;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = F8;
+	move.dst = B4;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = E1;
+	move.dst = G1;
+	move.special = SPECIAL_WK_CASTLING;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = E8;
+	move.dst = G8;
+	move.special = SPECIAL_BK_CASTLING;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+	
+
+
+	/*
+    // illegal test moves
+	move.src = H3;
+	move.dst = H1;
+	move.special = SPECIAL_PROMOTION_ROOK;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+
+	move.src = E4;
+	move.dst = E8;
+	move.special = SPECIAL_PROMOTION_ROOK;
+	makeMove(&bord, &move);
+	printBoard(&bord);
+	*/
+
+	return 0;
+}
