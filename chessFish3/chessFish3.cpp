@@ -14,7 +14,7 @@ void time_code(Board* bord) {
 
 	for (int i = 0; i < 1000000; ++i) {
 		//bitmap_white_pawns(bord) | bitmap_black_pawns(bord) | bitmap_black_king(bord) | bitmap_white_king(bord);
-		bitmap_white_rook(45, bord);
+		bitmap_white_bishop(E5, bord);
 	}
 
 	// Get the ending timestamp
@@ -33,12 +33,12 @@ int main()
 	//setup(&bord);
 	setupEmpty(&bord);
 	printBoard(&bord);
-	addPiece(&bord, WROOK, F3);
-	addPiece(&bord, WKING, C3);
-	addPiece(&bord, BPAWN, F7);
+	addPiece(&bord, WBISCHOP, E5);
+	addPiece(&bord, BKING, G7);
+	//addPiece(&bord, BPAWN, F7);
 	printBoard(&bord);
 
-	time_code(&bord);
+	//time_code(&bord);
 
 	/*
 	move.src = E2;

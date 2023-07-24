@@ -354,6 +354,93 @@ unsigned long long bitmap_black_rook(int square, Board* bord)
 	return attacks & (~bord->black);
 }
 
+// bishop attacks
+unsigned long long bitmap_white_bishop(int square, Board* bord){
+
+	square = 63 - square;
+	unsigned long long block = bord->white | bord->black;
+	// attack bitboard
+	unsigned long long attacks = 0;
+
+	// init files & ranks
+	int f, r;
+
+	// init target files & ranks
+	int tr = square / 8;
+	int tf = square % 8;
+
+	// generate attacks
+	for (r = tr + 1, f = tf + 1; r <= 7 && f <= 7; r++, f++)
+	{
+		attacks |= (1ULL << (r * 8 + f));
+		if (block & (1ULL << (r * 8 + f))) break;
+	}
+
+	for (r = tr + 1, f = tf - 1; r <= 7 && f >= 0; r++, f--)
+	{
+		attacks |= (1ULL << (r * 8 + f));
+		if (block & (1ULL << (r * 8 + f))) break;
+	}
+
+	for (r = tr - 1, f = tf + 1; r >= 0 && f <= 7; r--, f++)
+	{
+		attacks |= (1ULL << (r * 8 + f));
+		if (block & (1ULL << (r * 8 + f))) break;
+	}
+
+	for (r = tr - 1, f = tf - 1; r >= 0 && f >= 0; r--, f--)
+	{
+		attacks |= (1ULL << (r * 8 + f));
+		if (block & (1ULL << (r * 8 + f))) break;
+	}
+
+	// return attack map for bishop on a given square
+	return attacks & (~bord->white);
+}
+
+// bishop attacks
+unsigned long long bitmap_black_bishop(int square, Board* bord){
+
+	square = 63 - square;
+	unsigned long long block = bord->white | bord->black;
+	// attack bitboard
+	unsigned long long attacks = 0;
+
+	// init files & ranks
+	int f, r;
+
+	// init target files & ranks
+	int tr = square / 8;
+	int tf = square % 8;
+
+	// generate attacks
+	for (r = tr + 1, f = tf + 1; r <= 7 && f <= 7; r++, f++)
+	{
+		attacks |= (1ULL << (r * 8 + f));
+		if (block & (1ULL << (r * 8 + f))) break;
+	}
+
+	for (r = tr + 1, f = tf - 1; r <= 7 && f >= 0; r++, f--)
+	{
+		attacks |= (1ULL << (r * 8 + f));
+		if (block & (1ULL << (r * 8 + f))) break;
+	}
+
+	for (r = tr - 1, f = tf + 1; r >= 0 && f <= 7; r--, f++)
+	{
+		attacks |= (1ULL << (r * 8 + f));
+		if (block & (1ULL << (r * 8 + f))) break;
+	}
+
+	for (r = tr - 1, f = tf - 1; r >= 0 && f >= 0; r--, f--)
+	{
+		attacks |= (1ULL << (r * 8 + f));
+		if (block & (1ULL << (r * 8 + f))) break;
+	}
+
+	// return attack map for bishop on a given square
+	return attacks & (~bord->black);
+}
 
 
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
@@ -438,7 +525,7 @@ void printBoard(Board* bord){
 	std::cout << "1 " << temp.substr(56,8) << endl;
 	std::cout << "  abcdefgh" << endl;
 
-	printBitBoard(bitmap_white_rook(45, bord), "white rook attacks");
+	printBitBoard(bitmap_white_bishop(E5, bord), "white bishop attacks");
 	//cout << std::bitset<18>(bord->extra) << endl;
 	//cout << std::bitset<64>((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))) << endl;
 	//cout << std::bitset<64>((bord->extra & ((1ULL << 13))) >> 13) << endl;
