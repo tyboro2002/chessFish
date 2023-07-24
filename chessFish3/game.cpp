@@ -31,6 +31,11 @@ constexpr unsigned long long wqcastle = 0b00000000000000000000000000000000000000
 constexpr unsigned long long bkcastle = 0b0000011000000000000000000000000000000000000000000000000000000000;
 constexpr unsigned long long bqcastle = 0b0111000000000000000000000000000000000000000000000000000000000000;
 
+// bit manipulation macros
+#define get_bit(bitboard, index) (bitboard & (1ULL << index))
+#define set_bit(bitboard, index) (bitboard |= (1ULL << index))
+#define pop_bit(bitboard, index) (get_bit(bitboard, index) ? bitboard ^= (1ULL << index) : 0)
+
 constexpr unsigned long long rook_magics[64] = {
 	0x8a80104000800020ULL,
 	0x140002000100040ULL,
@@ -442,6 +447,57 @@ unsigned long long bitmap_black_bishop(int square, Board* bord){
 	return attacks & (~bord->black);
 }
 
+// mask knight attacks
+unsigned long long bitmap_white_knight (int square, Board* bord){
+
+	square = 63 - square;
+	// attack bitboard
+	unsigned long long attacks = 0;
+
+	// piece bitboard
+	unsigned long long bitboard = 0ULL;//bord->knight & bord->white ;
+	// set piece on bitboard
+	set_bit(bitboard, square);
+
+	// generate knight
+	if ((bitboard ) & (~H)) attacks |= (bitboard >> 17); //under right
+	if ((bitboard ) & (~A)) attacks |= (bitboard >> 15); //under left
+	if ((bitboard ) & (~(H|G))) attacks |= (bitboard >> 10); //right under
+	if ((bitboard ) & (~(A | B))) attacks |= (bitboard >> 6); //left under
+	if ((bitboard ) & (~A)) attacks |= (bitboard << 17); //top left
+	if ((bitboard ) & (~H)) attacks |= (bitboard << 15); //top right
+	if ((bitboard ) & (~(A | B))) attacks |= (bitboard << 10); //left top
+	if ((bitboard ) & (~(H | G))) attacks |= (bitboard << 6); //right top
+
+	// return attack map for knight on a given square
+	return attacks & (~bord->white);
+}
+
+// mask knight attacks
+unsigned long long bitmap_black_knight(int square, Board* bord) {
+
+	square = 63 - square;
+	// attack bitboard
+	unsigned long long attacks = 0;
+
+	// piece bitboard
+	unsigned long long bitboard = 0ULL;//bord->knight & bord->white ;
+	// set piece on bitboard
+	set_bit(bitboard, square);
+
+	// generate knight
+	if ((bitboard) & (~H)) attacks |= (bitboard >> 17); //under right
+	if ((bitboard) & (~A)) attacks |= (bitboard >> 15); //under left
+	if ((bitboard) & (~(H | G))) attacks |= (bitboard >> 10); //right under
+	if ((bitboard) & (~(A | B))) attacks |= (bitboard >> 6); //left under
+	if ((bitboard) & (~A)) attacks |= (bitboard << 17); //top left
+	if ((bitboard) & (~H)) attacks |= (bitboard << 15); //top right
+	if ((bitboard) & (~(A | B))) attacks |= (bitboard << 10); //left top
+	if ((bitboard) & (~(H | G))) attacks |= (bitboard << 6); //right top
+
+	// return attack map for knight on a given square
+	return attacks & (~bord->black);
+}
 
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
 std::string convertTo64CharString(unsigned long long rook, unsigned long long knight, unsigned long long bishop, unsigned long long queen, unsigned long long king, unsigned long long pawn, unsigned long long white, unsigned long long black) {
@@ -525,7 +581,7 @@ void printBoard(Board* bord){
 	std::cout << "1 " << temp.substr(56,8) << endl;
 	std::cout << "  abcdefgh" << endl;
 
-	printBitBoard(bitmap_white_bishop(E5, bord), "white bishop attacks");
+	printBitBoard(bitmap_white_knight(A2,bord), "white knight attacks");
 	//cout << std::bitset<18>(bord->extra) << endl;
 	//cout << std::bitset<64>((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))) << endl;
 	//cout << std::bitset<64>((bord->extra & ((1ULL << 13))) >> 13) << endl;
