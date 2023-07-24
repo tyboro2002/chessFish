@@ -186,9 +186,16 @@ constexpr unsigned long long Down(unsigned long long num) {
 	return num >> 8;
 }
 
-constexpr unsigned long long tempB = (1ULL << 63) >> (D5);
-
 using namespace std;
+
+int countTrailingZeros(unsigned long long number) {
+	unsigned long index;
+	if (_BitScanForward64(&index, number)) {
+		return static_cast<int>(index);
+	}
+	return 64; // Return 64 if the input number is 0
+}
+
 
 unsigned long long bitmap_white_pawns(Board* bord) {
 	unsigned long long wpawns = bord->pawn & bord->white; // all positions of white pawns
@@ -274,6 +281,7 @@ unsigned long long bitmap_white_rook(int position, Board* bord) {
 // rook attacks
 unsigned long long bitmap_white_rook(int square, Board* bord)
 {
+	unsigned long long white = ~((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
 	square = 63 - square;
 	unsigned long long block = bord->white | bord->black;
 	// attacks bitboard
@@ -312,12 +320,13 @@ unsigned long long bitmap_white_rook(int square, Board* bord)
 	}
 
 	// return attack map for bishop on a given square
-	return attacks & (~bord->white);
+	return (attacks & (~bord->white)) & white;
 }
 
 // rook attacks
 unsigned long long bitmap_black_rook(int square, Board* bord)
 {
+	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0bits if white is in play 1 otherwise
 	square = 63 - square;
 	unsigned long long block = bord->white | bord->black;
 	// attacks bitboard
@@ -356,12 +365,12 @@ unsigned long long bitmap_black_rook(int square, Board* bord)
 	}
 
 	// return attack map for bishop on a given square
-	return attacks & (~bord->black);
+	return (attacks & (~bord->black)) & black;
 }
 
 // bishop attacks
 unsigned long long bitmap_white_bishop(int square, Board* bord){
-
+	unsigned long long white = ~((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
 	square = 63 - square;
 	unsigned long long block = bord->white | bord->black;
 	// attack bitboard
@@ -400,12 +409,13 @@ unsigned long long bitmap_white_bishop(int square, Board* bord){
 	}
 
 	// return attack map for bishop on a given square
-	return attacks & (~bord->white);
+	return (attacks & (~bord->white)) & white;
 }
 
 // bishop attacks
 unsigned long long bitmap_black_bishop(int square, Board* bord){
 
+	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0bits if white is in play 1 otherwise
 	square = 63 - square;
 	unsigned long long block = bord->white | bord->black;
 	// attack bitboard
@@ -444,12 +454,12 @@ unsigned long long bitmap_black_bishop(int square, Board* bord){
 	}
 
 	// return attack map for bishop on a given square
-	return attacks & (~bord->black);
+	return (attacks & (~bord->black)) & black;
 }
 
 // mask knight attacks
 unsigned long long bitmap_white_knight (int square, Board* bord){
-
+	unsigned long long white = ~((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
 	square = 63 - square;
 	// attack bitboard
 	unsigned long long attacks = 0;
@@ -470,12 +480,13 @@ unsigned long long bitmap_white_knight (int square, Board* bord){
 	if ((bitboard ) & (~(H | G))) attacks |= (bitboard << 6); //right top
 
 	// return attack map for knight on a given square
-	return attacks & (~bord->white);
+	return (attacks & (~bord->white))&white;
 }
 
 // mask knight attacks
 unsigned long long bitmap_black_knight(int square, Board* bord) {
 
+	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0bits if white is in play 1 otherwise
 	square = 63 - square;
 	// attack bitboard
 	unsigned long long attacks = 0;
@@ -496,7 +507,75 @@ unsigned long long bitmap_black_knight(int square, Board* bord) {
 	if ((bitboard) & (~(H | G))) attacks |= (bitboard << 6); //right top
 
 	// return attack map for knight on a given square
-	return attacks & (~bord->black);
+	return (attacks & (~bord->black)) & black;
+}
+
+unsigned long long all_white_attacks(Board* bord) {
+	unsigned long long wrook = bord->white & bord->rook;
+	unsigned long long wknight = bord->white & bord->knight;
+	unsigned long long wbishop = bord->white & bord->bishop;
+	unsigned long long wqueen = bord->white & bord->queen;
+	unsigned long long wking = bord->white & bord->king;
+	unsigned long long wpawn = bord->white & bord->pawn;
+	unsigned long long attacks = 0ULL;
+	while (wrook) {
+		int bitIndex = countTrailingZeros(wrook); // Get the index of the least significant set bit
+		attacks |= bitmap_white_rook(63-bitIndex,bord); // Call the corresponding function with the index of the set bit
+		wrook &= (wrook - 1); // Clear the least significant set bit
+	}
+	while (wknight) {
+		int bitIndex = countTrailingZeros(wknight); // Get the index of the least significant set bit
+		attacks |= bitmap_white_knight(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
+		wknight &= (wknight - 1); // Clear the least significant set bit
+	}
+	while (wbishop) {
+		int bitIndex = countTrailingZeros(wbishop); // Get the index of the least significant set bit
+		attacks |= bitmap_white_bishop(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
+		wbishop &= (wbishop - 1); // Clear the least significant set bit
+	}
+	while (wqueen) {
+		int bitIndex = countTrailingZeros(wqueen); // Get the index of the least significant set bit
+		attacks |= bitmap_white_bishop(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
+		attacks |= bitmap_white_rook(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
+		wqueen &= (wqueen - 1); // Clear the least significant set bit
+	}
+	attacks |= bitmap_white_king(bord);
+	attacks |= bitmap_white_pawns(bord);
+	return attacks;
+}
+
+unsigned long long all_black_attacks(Board* bord) {
+	unsigned long long brook = bord->black & bord->rook;
+	unsigned long long bknight = bord->black & bord->knight;
+	unsigned long long bbishop = bord->black & bord->bishop;
+	unsigned long long bqueen = bord->black & bord->queen;
+	unsigned long long bking = bord->black & bord->king;
+	unsigned long long bpawn = bord->black & bord->pawn;
+	unsigned long long attacks = 0ULL;
+	while (brook) {
+		int bitIndex = countTrailingZeros(brook); // Get the index of the least significant set bit
+		attacks |= bitmap_white_rook(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
+		brook &= (brook - 1); // Clear the least significant set bit
+	}
+	while (bknight) {
+		int bitIndex = countTrailingZeros(bknight); // Get the index of the least significant set bit
+		attacks |= bitmap_white_knight(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
+		bknight &= (bknight - 1); // Clear the least significant set bit
+	}
+	while (bbishop) {
+		int bitIndex = countTrailingZeros(bbishop); // Get the index of the least significant set bit
+		attacks |= bitmap_white_bishop(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
+		bbishop &= (bbishop - 1); // Clear the least significant set bit
+	}
+	while (bqueen) {
+		int bitIndex = countTrailingZeros(bqueen); // Get the index of the least significant set bit
+		attacks |= bitmap_white_bishop(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
+		attacks |= bitmap_white_rook(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
+		bqueen &= (bqueen - 1); // Clear the least significant set bit
+	}
+	attacks |= bitmap_white_king(bord);
+	attacks |= bitmap_white_pawns(bord);
+	return attacks;
 }
 
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
@@ -581,7 +660,7 @@ void printBoard(Board* bord){
 	std::cout << "1 " << temp.substr(56,8) << endl;
 	std::cout << "  abcdefgh" << endl;
 
-	printBitBoard(bitmap_white_knight(A2,bord), "white knight attacks");
+	printBitBoard(all_white_attacks(bord), "all white attacks");
 	//cout << std::bitset<18>(bord->extra) << endl;
 	//cout << std::bitset<64>((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))) << endl;
 	//cout << std::bitset<64>((bord->extra & ((1ULL << 13))) >> 13) << endl;

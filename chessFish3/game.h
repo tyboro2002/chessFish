@@ -136,3 +136,6 @@ unsigned long long bitmap_white_bishop(int square, Board* bord);
 unsigned long long bitmap_black_bishop(int square, Board* bord);
 unsigned long long bitmap_white_knight(int square, Board* bord);
 unsigned long long bitmap_black_knight(int square, Board* bord);
+
+unsigned long long all_white_attacks(Board* bord);
+unsigned long long all_black_attacks(Board* bord);
