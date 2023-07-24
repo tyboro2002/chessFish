@@ -40,6 +40,21 @@ enum Square {
 	A1, B1, C1, D1, E1, F1, G1, H1,
 };
 
+enum Pieces {
+	WROOK = 0,
+	WKNIGHT,
+	WBISCHOP,
+	WQUEEN,
+	WKING,
+	WPAWN,
+	BROOK,
+	BKNIGHT,
+	BBISCHOP,
+	BQUEEN,
+	BKING,
+	BPAWN,
+};
+
 enum SPECIAL
 {
 	NOT_SPECIAL = 0,
@@ -107,11 +122,12 @@ public:
 };
 
 void setup(Board* bord);
+void setupEmpty(Board* bord);
+void addPiece(Board* bord, Pieces piece, int square);
 void printBoard(Board* bord);
 void makeMove(Board* bord, Move* move);
 unsigned long long bitmap_white_pawns(Board* bord);
 unsigned long long bitmap_black_pawns(Board* bord);
 unsigned long long bitmap_white_king(Board* bord);
 unsigned long long bitmap_black_king(Board* bord);
-
-//unsigned long long bitmap_white_rook(int position, Board* bord);
+unsigned long long bitmap_white_rook(int position, Board* bord);
