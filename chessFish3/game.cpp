@@ -23,7 +23,28 @@ constexpr unsigned long long G        = 0b00000010000000100000001000000010000000
 constexpr unsigned long long H        = 0b0000000100000001000000010000000100000001000000010000000100000001; // A >> 7
 
 constexpr unsigned long long all      = 0b1111111111111111111111111111111111111111111111111111111111111111; // << 8 move row up, >> 8 move row down (left right imposible)
-constexpr unsigned long long border   = 0b1111111110000001100000011000000110000001100000011000000111111111;
+constexpr unsigned long long border   = 0b1111111110000001100000011000000110000001100000011000000111111111; // the border of the field
+constexpr unsigned long long corners  = 0b1000000100000000000000000000000000000000000000000000000010000001;
+constexpr unsigned long long wkcastle = 0b0000000000000000000000000000000000000000000000000000000000000110;
+constexpr unsigned long long wqcastle = 0b0000000000000000000000000000000000000000000000000000000001110000;
+constexpr unsigned long long bkcastle = 0b0000011000000000000000000000000000000000000000000000000000000000;
+constexpr unsigned long long bqcastle = 0b0111000000000000000000000000000000000000000000000000000000000000;
+
+constexpr unsigned long long Right(unsigned long long num) {
+	return num >> 1;
+}
+
+constexpr unsigned long long Left(unsigned long long num) {
+	return num << 1;
+}
+
+constexpr unsigned long long Up(unsigned long long num) {
+	return num << 8;
+}
+
+constexpr unsigned long long Down(unsigned long long num) {
+	return num >> 8;
+}
 
 constexpr unsigned long long tempB = (1ULL << 63) >> (D5);
 
@@ -45,8 +66,28 @@ unsigned long long bitmap_black_pawns(Board* bord) {
 	unsigned long long nonCaptures = (((doublePawns >> 8) | (doublePawns >> 16) | (bpawns >> 8)) & (~(bord->white | bord->black))); // all non capturing moves a pawn can do
 	unsigned long long captures = ((bpawns & (~border)) >> 7 | (bpawns & (~border)) >> 9 | (bpawns & H) >> 7 | (bpawns & A) >> 9); // all capturing moves a pawn can do
 	unsigned long long enPassent = (~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))); // all squares that are able to be en passented
-	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
+	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0 bits if white is in play 1's otherwise
 	return (nonCaptures | (captures & bord->white) | (enPassent & black & captures)) & black;
+}
+
+unsigned long long bitmap_white_king(Board* bord) {
+	unsigned long long wkings = bord->king & bord->white; // all positions of white kings
+	unsigned long long all_dirs_non_border = Down((wkings & (~border))) | Up((wkings & (~border))) | Left((wkings & (~border))) | Right((wkings & (~border)));
+	unsigned long long all_dirs_non_corner = Right(wkings & A) | Up(wkings & A) | Down(wkings & A) | Left(wkings & H) | Up(wkings & H) | Down(wkings & H) | Up(wkings & oneRow) | Left(wkings & oneRow) | Right(wkings & oneRow) | Down(wkings & eightRow) | Left(wkings & eightRow) | Right(wkings & eightRow);
+	unsigned long long empty = ~(bord->white | bord->black);
+	unsigned long long castel = ((((wkcastle & empty) == 6) & ((bord->extra >> 17) & 1)) << 1) | ((((wqcastle & empty) == 112) & ((bord->extra >> 16) & 1) & 1) << 5);//| ((bord->extra >> 15) & 1) | ((bord->extra >> 14) & 1);
+	unsigned long long white = ~((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
+	return (((all_dirs_non_border | all_dirs_non_corner)& (~bord->white)) |castel) & white;
+}
+
+unsigned long long bitmap_black_king(Board* bord) {
+	unsigned long long bkings = bord->king & bord->black; // all positions of black kings
+	unsigned long long all_dirs_non_border = Down((bkings & (~border))) | Up((bkings & (~border))) | Left((bkings & (~border))) | Right((bkings & (~border)));
+	unsigned long long all_dirs_non_corner = Right(bkings & A) | Up(bkings & A) | Down(bkings & A) | Left(bkings & H) | Up(bkings & H) | Down(bkings & H) | Up(bkings & oneRow) | Left(bkings & oneRow) | Right(bkings & oneRow) | Down(bkings & eightRow) | Left(bkings & eightRow) | Right(bkings & eightRow);
+	unsigned long long empty = ~(bord->white | bord->black);
+	unsigned long long castel = (((((bkcastle & empty) == 432345564227567616) & ((bord->extra >> 15) & 1)) << 57)) | (((((bqcastle & empty) == 8070450532247928832) & ((bord->extra >> 14) & 1)) << 61));
+	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0 bits if white is in play 1's otherwise
+	return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel) & black;
 }
 
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
@@ -96,8 +137,8 @@ void overlay(std::string* str, unsigned long long bitpattern, char character) {
 
 void printBoard(Board* bord){
 	std::string temp = convertTo64CharString(bord->rook, bord->knight, bord->bishop, bord->queen, bord->king, bord->pawn, bord->white, bord->black);
-	overlay(&temp, bitmap_black_pawns(bord), 'X');
-	//overlay(&temp, tempB, 'O');
+	overlay(&temp, bitmap_black_king(bord), 'X');
+	//overlay(&temp, bqcastle, 'O');
 	// 0b000000000000000000000000000000000000000000000000000000000000000
 	std::cout << endl;
 	if ((bord->extra & 1ULL << 18) != 0) {
@@ -259,10 +300,10 @@ void makeMove(Board* bord, Move* move) {
 
 			unsigned long long newRookSQ = ((1ULL << 63) >> (F8));
 			bord->rook |= newRookSQ;
-			bord->white |= newRookSQ;
+			bord->black |= newRookSQ;
 			unsigned long long newKingSQ = ((1ULL << 63) >> (G8));
 			bord->king |= newKingSQ;
-			bord->white |= newKingSQ;
+			bord->black |= newKingSQ;
 		}
 		else if (move->special == SPECIAL_WQ_CASTLING) {
 			bord->extra &= ~((((1ULL << 2) - 1) << 16));
@@ -291,10 +332,10 @@ void makeMove(Board* bord, Move* move) {
 
 			unsigned long long newRookSQ = ((1ULL << 63) >> (D8));
 			bord->rook |= newRookSQ;
-			bord->white |= newRookSQ;
+			bord->black |= newRookSQ;
 			unsigned long long newKingSQ = ((1ULL << 63) >> (C8));
 			bord->king |= newKingSQ;
-			bord->white |= newKingSQ;
+			bord->black |= newKingSQ;
 		}
 		else if (move->special == SPECIAL_PROMOTION_BISHOP) {
 			if ((bord->extra &= (1ULL << 18)) != 0) {
