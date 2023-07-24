@@ -3,8 +3,28 @@
 
 #include "chessFish3.h"
 #include "game.h"
+#include <chrono>
 
 using namespace std;
+
+void time_code(Board* bord) {
+	//timing code
+	// Get the starting timestamp
+	auto startTime = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < 1000000; ++i) {
+		bitmap_white_pawns(bord) | bitmap_black_pawns(bord) | bitmap_black_king(bord) | bitmap_white_king(bord);
+		//bitmap_white_rook(63, bord);
+	}
+
+	// Get the ending timestamp
+	auto endTime = std::chrono::high_resolution_clock::now();
+
+	// Calculate the duration in microseconds (change to other duration units as needed)
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+
+	std::cout << "Time taken: " << duration << " microseconds" << std::endl;
+}
 
 int main()
 {
@@ -12,7 +32,6 @@ int main()
 	Move move;
 	setup(&bord);
 	printBoard(&bord);
-
 
 	move.src = E2;
 	move.dst = E4;
@@ -121,8 +140,8 @@ int main()
 	move.special = SPECIAL_BK_CASTLING;
 	makeMove(&bord, &move);
 	printBoard(&bord);
-	
 
+	time_code(&bord);
 
 	/*
     // illegal test moves

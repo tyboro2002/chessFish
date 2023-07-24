@@ -107,7 +107,11 @@ public:
 };
 
 void setup(Board* bord);
-
 void printBoard(Board* bord);
-
 void makeMove(Board* bord, Move* move);
+unsigned long long bitmap_white_pawns(Board* bord);
+unsigned long long bitmap_black_pawns(Board* bord);
+unsigned long long bitmap_white_king(Board* bord);
+unsigned long long bitmap_black_king(Board* bord);
+
+//unsigned long long bitmap_white_rook(int position, Board* bord);

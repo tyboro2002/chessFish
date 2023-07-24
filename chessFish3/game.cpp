@@ -3,6 +3,7 @@
 
 #include "game.h"
 #include <bitset>
+#include <chrono>
 
 constexpr unsigned long long oneRow   = 0b0000000000000000000000000000000000000000000000000000000011111111; // oneRow
 constexpr unsigned long long twoRow   = 0b0000000000000000000000000000000000000000000000001111111100000000; // oneRow << 8
@@ -90,6 +91,48 @@ unsigned long long bitmap_black_king(Board* bord) {
 	return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel) & black;
 }
 
+/*
+// Function to generate a bitboard representing all squares a rook can attack from a given position (0 to 63)
+unsigned long long bitmap_white_rook(int position, Board* bord) {
+	unsigned long long occupied = bord->white | bord->black;
+	unsigned long long rookAttacks = 0ULL;
+	int row = position / 8;
+	int col = position % 8;
+
+	// Generate attacks along the same row (horizontal)
+	unsigned long long horizontalMask = eightRow >> (8 * row);
+	unsigned long long horizontalAttacks = horizontalMask & ~((1ULL << 63) >> position);
+
+	// Remove the squares that are blocked by other pieces along the row to the right of the rook
+	unsigned long long rightOccupied = occupied & (horizontalMask >> (col + 1));
+	unsigned long long rightClearMask = rightOccupied - 1ULL;
+	horizontalAttacks ^= (horizontalAttacks & rightOccupied) & (horizontalAttacks ^ rightClearMask);
+
+	// Remove the squares that are blocked by other pieces along the row to the left of the rook
+	unsigned long long leftOccupied = occupied & (horizontalMask << (8 - col));
+	unsigned long long leftClearMask = (leftOccupied - 1ULL) << 1ULL;
+	horizontalAttacks ^= (horizontalAttacks & leftOccupied) & (horizontalAttacks ^ leftClearMask);
+
+	// Generate attacks along the same column (vertical)
+	unsigned long long verticalMask = A >> col;
+	unsigned long long verticalAttacks = verticalMask & ~((1ULL << 63) >> position);
+
+	// Remove the squares that are blocked by other pieces along the column above the rook
+	unsigned long long upOccupied = occupied & (verticalMask >> (row + 1));
+	unsigned long long upClearMask = rightOccupied - 1ULL;
+	verticalAttacks ^= (verticalAttacks & upOccupied) & (verticalAttacks ^ upClearMask);
+
+	// Remove the squares that are blocked by other pieces along the column below the rook
+	unsigned long long downOccupied = occupied & (verticalMask << (8 - row));
+	unsigned long long downClearMask = (leftOccupied - 1ULL) << 1ULL;
+	verticalAttacks ^= (verticalAttacks & downOccupied) & (verticalAttacks ^ downClearMask);
+
+	rookAttacks = horizontalAttacks | verticalAttacks;
+	return rookAttacks;
+}
+*/
+
+
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
 std::string convertTo64CharString(unsigned long long rook, unsigned long long knight, unsigned long long bishop, unsigned long long queen, unsigned long long king, unsigned long long pawn, unsigned long long white, unsigned long long black) {
 	std::string result;
@@ -137,7 +180,7 @@ void overlay(std::string* str, unsigned long long bitpattern, char character) {
 
 void printBoard(Board* bord){
 	std::string temp = convertTo64CharString(bord->rook, bord->knight, bord->bishop, bord->queen, bord->king, bord->pawn, bord->white, bord->black);
-	overlay(&temp, bitmap_black_king(bord), 'X');
+	//overlay(&temp, bitmap_white_rook(63,bord), 'X');
 	//overlay(&temp, bqcastle, 'O');
 	// 0b000000000000000000000000000000000000000000000000000000000000000
 	std::cout << endl;
