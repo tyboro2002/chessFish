@@ -131,3 +131,4 @@ unsigned long long bitmap_black_pawns(Board* bord);
 unsigned long long bitmap_white_king(Board* bord);
 unsigned long long bitmap_black_king(Board* bord);
 unsigned long long bitmap_white_rook(int position, Board* bord);
+unsigned long long bitmap_black_rook(int position, Board* bord);
