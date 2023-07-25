@@ -203,8 +203,7 @@ unsigned long long bitmap_white_pawns(Board* bord) {
 	unsigned long long nonCaptures = (((doublePawns << 8) | (doublePawns << 16) | (wpawns << 8)) & (~(bord->white | bord->black))); // all non capturing moves a pawn can do
 	unsigned long long captures = ((wpawns & (~border)) << 7 | (wpawns & (~border)) << 9 | (wpawns & H) << 9 | (wpawns & A) << 7); // all capturing moves a pawn can do
 	unsigned long long enPassent = (~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))); // all squares that are able to be en passented
-	unsigned long long white = ~((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
-	return (nonCaptures | (captures & bord->black) | (enPassent & white & captures)) & white;
+	return (nonCaptures | (captures & bord->black) | (enPassent & captures));
 }
 
 unsigned long long bitmap_black_pawns(Board* bord) {
@@ -213,8 +212,7 @@ unsigned long long bitmap_black_pawns(Board* bord) {
 	unsigned long long nonCaptures = (((doublePawns >> 8) | (doublePawns >> 16) | (bpawns >> 8)) & (~(bord->white | bord->black))); // all non capturing moves a pawn can do
 	unsigned long long captures = ((bpawns & (~border)) >> 7 | (bpawns & (~border)) >> 9 | (bpawns & H) >> 7 | (bpawns & A) >> 9); // all capturing moves a pawn can do
 	unsigned long long enPassent = (~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))); // all squares that are able to be en passented
-	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0 bits if white is in play 1's otherwise
-	return (nonCaptures | (captures & bord->white) | (enPassent & black & captures)) & black;
+	return (nonCaptures | (captures & bord->white) | (enPassent & captures));
 }
 
 unsigned long long bitmap_white_king(Board* bord) {
@@ -223,8 +221,7 @@ unsigned long long bitmap_white_king(Board* bord) {
 	unsigned long long all_dirs_non_corner = Right(wkings & A) | Up(wkings & A) | Down(wkings & A) | Left(wkings & H) | Up(wkings & H) | Down(wkings & H) | Up(wkings & oneRow) | Left(wkings & oneRow) | Right(wkings & oneRow) | Down(wkings & eightRow) | Left(wkings & eightRow) | Right(wkings & eightRow);
 	unsigned long long empty = ~(bord->white | bord->black);
 	unsigned long long castel = ((((wkcastle & empty) == 6) & ((bord->extra >> 17) & 1)) << 1) | ((((wqcastle & empty) == 112) & ((bord->extra >> 16) & 1) & 1) << 5);//| ((bord->extra >> 15) & 1) | ((bord->extra >> 14) & 1);
-	unsigned long long white = ~((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
-	return (((all_dirs_non_border | all_dirs_non_corner)& (~bord->white)) |castel) & white;
+	return (((all_dirs_non_border | all_dirs_non_corner)& (~bord->white)) |castel);
 }
 
 unsigned long long bitmap_black_king(Board* bord) {
@@ -233,8 +230,7 @@ unsigned long long bitmap_black_king(Board* bord) {
 	unsigned long long all_dirs_non_corner = Right(bkings & A) | Up(bkings & A) | Down(bkings & A) | Left(bkings & H) | Up(bkings & H) | Down(bkings & H) | Up(bkings & oneRow) | Left(bkings & oneRow) | Right(bkings & oneRow) | Down(bkings & eightRow) | Left(bkings & eightRow) | Right(bkings & eightRow);
 	unsigned long long empty = ~(bord->white | bord->black);
 	unsigned long long castel = (((((bkcastle & empty) == 432345564227567616) & ((bord->extra >> 15) & 1)) << 57)) | (((((bqcastle & empty) == 8070450532247928832) & ((bord->extra >> 14) & 1)) << 61));
-	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0 bits if white is in play 1's otherwise
-	return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel) & black;
+	return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel);
 }
 
 /*
@@ -279,9 +275,7 @@ unsigned long long bitmap_white_rook(int position, Board* bord) {
 */
 
 // rook attacks
-unsigned long long bitmap_white_rook(int square, Board* bord)
-{
-	unsigned long long white = ~((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
+unsigned long long bitmap_white_rook(int square, Board* bord){
 	square = 63 - square;
 	unsigned long long block = bord->white | bord->black;
 	// attacks bitboard
@@ -320,13 +314,11 @@ unsigned long long bitmap_white_rook(int square, Board* bord)
 	}
 
 	// return attack map for bishop on a given square
-	return (attacks & (~bord->white)) & white;
+	return attacks & (~bord->white);
 }
 
 // rook attacks
-unsigned long long bitmap_black_rook(int square, Board* bord)
-{
-	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0bits if white is in play 1 otherwise
+unsigned long long bitmap_black_rook(int square, Board* bord){
 	square = 63 - square;
 	unsigned long long block = bord->white | bord->black;
 	// attacks bitboard
@@ -365,12 +357,12 @@ unsigned long long bitmap_black_rook(int square, Board* bord)
 	}
 
 	// return attack map for bishop on a given square
-	return (attacks & (~bord->black)) & black;
+	return attacks & (~bord->black);
 }
 
 // bishop attacks
 unsigned long long bitmap_white_bishop(int square, Board* bord){
-	unsigned long long white = ~((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
+
 	square = 63 - square;
 	unsigned long long block = bord->white | bord->black;
 	// attack bitboard
@@ -409,13 +401,13 @@ unsigned long long bitmap_white_bishop(int square, Board* bord){
 	}
 
 	// return attack map for bishop on a given square
-	return (attacks & (~bord->white)) & white;
+	return attacks & (~bord->white);
 }
 
 // bishop attacks
 unsigned long long bitmap_black_bishop(int square, Board* bord){
 
-	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0bits if white is in play 1 otherwise
+
 	square = 63 - square;
 	unsigned long long block = bord->white | bord->black;
 	// attack bitboard
@@ -454,12 +446,12 @@ unsigned long long bitmap_black_bishop(int square, Board* bord){
 	}
 
 	// return attack map for bishop on a given square
-	return (attacks & (~bord->black)) & black;
+	return attacks & (~bord->black);
 }
 
 // mask knight attacks
 unsigned long long bitmap_white_knight (int square, Board* bord){
-	unsigned long long white = ~((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 1bits if white is in play 0 otherwise
+
 	square = 63 - square;
 	// attack bitboard
 	unsigned long long attacks = 0;
@@ -480,13 +472,12 @@ unsigned long long bitmap_white_knight (int square, Board* bord){
 	if ((bitboard ) & (~(H | G))) attacks |= (bitboard << 6); //right top
 
 	// return attack map for knight on a given square
-	return (attacks & (~bord->white))&white;
+	return attacks & (~bord->white);
 }
 
 // mask knight attacks
 unsigned long long bitmap_black_knight(int square, Board* bord) {
 
-	unsigned long long black = ((((bord->extra & (1ULL << 18)) >> 18) << 64) - 1); //64 0bits if white is in play 1 otherwise
 	square = 63 - square;
 	// attack bitboard
 	unsigned long long attacks = 0;
@@ -507,7 +498,7 @@ unsigned long long bitmap_black_knight(int square, Board* bord) {
 	if ((bitboard) & (~(H | G))) attacks |= (bitboard << 6); //right top
 
 	// return attack map for knight on a given square
-	return (attacks & (~bord->black)) & black;
+	return attacks & (~bord->black);
 }
 
 unsigned long long all_white_attacks(Board* bord) {
@@ -660,7 +651,8 @@ void printBoard(Board* bord){
 	std::cout << "1 " << temp.substr(56,8) << endl;
 	std::cout << "  abcdefgh" << endl;
 
-	printBitBoard(all_white_attacks(bord), "all white attacks");
+	//printBitBoard(all_white_attacks(bord), "all white attacks");
+	printBitBoard(bitmap_white_pawns(bord), "all white attacks");
 	//cout << std::bitset<18>(bord->extra) << endl;
 	//cout << std::bitset<64>((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))) << endl;
 	//cout << std::bitset<64>((bord->extra & ((1ULL << 13))) >> 13) << endl;
