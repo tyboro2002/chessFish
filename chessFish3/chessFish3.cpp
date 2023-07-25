@@ -30,6 +30,10 @@ int main()
 {
 	Board bord;
 	Move move;
+	MOVELIST moveList;
+	// Clear move list
+	moveList.count = 0;   // set each field for each move
+
 	setup(&bord);
 	//setupEmpty(&bord);
 	//printBoard(&bord);
@@ -37,7 +41,7 @@ int main()
 	//addPiece(&bord, WKING, C1);
 	//addPiece(&bord, BPAWN, F7);
 	printBoard(&bord);
-
+	
 	//time_code(&bord);
 
 	move.src = E2;
@@ -136,6 +140,14 @@ int main()
 	makeMove(&bord, &move);
 	printBoard(&bord);
 
+	clearSquare(&bord, D2);
+	printBoard(&bord);
+
+	white_moves(&moveList, &bord);
+	//white_bishop_moves(C1, &moveList, &bord);
+
+	cout << endl;
+
 	move.src = E1;
 	move.dst = G1;
 	move.special = SPECIAL_WK_CASTLING;
@@ -149,7 +161,7 @@ int main()
 	printBoard(&bord);
 
 	time_code(&bord);
-	
+
 	/*
     // illegal test moves
 	move.src = H3;

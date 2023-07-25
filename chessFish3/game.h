@@ -5,6 +5,12 @@
 
 #include <iostream>
 
+// Calculate an upper limit to the length of a list of moves
+#define MAXMOVES (27 + 2*13 + 2*14 + 2*8 + 8 + 8*4  +  3*27)
+				//[Q   2*B    2*R    2*N   K   8*P] +  [3*Q]
+				//             ^                         ^
+				//[calculated practical maximum   ] + [margin]
+
 // TODO: Reference additional headers your program requires here.
 struct Board {
 	// pieces
@@ -104,8 +110,7 @@ enum TERMINAL
 	TERMINAL_BSTALEMATE = 2     // Black is stalemated
 };
 
-class Move
-{
+class Move{
 public:
 	// Move is a lightweight type, it is accommodated in only 32 bits
 	Square  src : 8;
@@ -121,15 +126,44 @@ public:
 	bool operator !=(const Move& other) const { return(*((int32_t*)this) != *((int32_t*)(&other)));}
 };
 
+// List of moves
+struct MOVELIST{
+	int count;  // number of moves
+	Move moves[MAXMOVES];
+};
+
 void setup(Board* bord);
 void setupEmpty(Board* bord);
 void addPiece(Board* bord, Pieces piece, int square);
+void clearSquare(Board* bord, int square);
 void printBoard(Board* bord);
+void printBitBoard(unsigned long long bitbord, std::string extra);
 void makeMove(Board* bord, Move* move);
-unsigned long long bitmap_white_pawns(Board* bord);
-unsigned long long bitmap_black_pawns(Board* bord);
-unsigned long long bitmap_white_king(Board* bord);
-unsigned long long bitmap_black_king(Board* bord);
+
+void white_pawn_moves(int position, MOVELIST* movelist, Board* bord);
+void black_pawn_moves(int position, MOVELIST* movelist, Board* bord);
+void white_rook_moves(int position, MOVELIST* movelist, Board* bord);
+void black_rook_moves(int position, MOVELIST* movelist, Board* bord);
+void white_knight_moves(int position, MOVELIST* movelist, Board* bord);
+void black_knight_moves(int position, MOVELIST* movelist, Board* bord);
+void white_bishop_moves(int position, MOVELIST* movelist, Board* bord);
+void black_bishop_moves(int position, MOVELIST* movelist, Board* bord);
+void white_queen_moves(int position, MOVELIST* movelist, Board* bord);
+void black_queen_moves(int position, MOVELIST* movelist, Board* bord);
+void white_king_moves(int position, MOVELIST* movelist, Board* bord);
+void black_king_moves(int position, MOVELIST* movelist, Board* bord);
+void white_moves(MOVELIST* movelist, Board* bord);
+void black_moves(MOVELIST* movelist, Board* bord);
+
+unsigned long long bitmap_all_white_pawns(Board* bord);
+unsigned long long bitmap_all_black_pawns(Board* bord);
+unsigned long long bitmap_all_white_king(Board* bord);
+unsigned long long bitmap_all_black_king(Board* bord);
+
+unsigned long long bitmap_white_pawns(int position, Board* bord);
+unsigned long long bitmap_black_pawns(int position, Board* bord);
+unsigned long long bitmap_white_king(int position, Board* bord);
+unsigned long long bitmap_black_king(int position, Board* bord);
 unsigned long long bitmap_white_rook(int position, Board* bord);
 unsigned long long bitmap_black_rook(int position, Board* bord);
 unsigned long long bitmap_white_bishop(int square, Board* bord);
