@@ -42,6 +42,9 @@ int main()
 	//addPiece(&bord, BPAWN, F7);
 	printBoard(&bord);
 	
+	GenLegalMoveList(&moveList, &bord);
+
+	cout << endl;
 	//time_code(&bord);
 
 	move.src = E2;
@@ -140,13 +143,13 @@ int main()
 	makeMove(&bord, &move);
 	printBoard(&bord);
 
-	clearSquare(&bord, D2);
-	printBoard(&bord);
+	//clearSquare(&bord, D2);
+	//printBoard(&bord);
 
-	white_moves(&moveList, &bord);
+	//white_moves(&moveList, &bord);
 	//white_bishop_moves(C1, &moveList, &bord);
 
-	cout << endl;
+	//cout << endl;
 
 	move.src = E1;
 	move.dst = G1;

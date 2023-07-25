@@ -32,10 +32,14 @@ constexpr unsigned long long bkcastle = 0b00000110000000000000000000000000000000
 constexpr unsigned long long bqcastle = 0b0111000000000000000000000000000000000000000000000000000000000000;
 
 #define en_passent_target(bord) ((~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))))
+#define white_plays(bord) ((bord->extra &= (1ULL << 18)) != 0)
 // bit manipulation macros
 #define get_bit(bitboard, index) (bitboard & (1ULL << index))
 #define set_bit(bitboard, index) (bitboard |= (1ULL << index))
 #define pop_bit(bitboard, index) (get_bit(bitboard, index) ? bitboard ^= (1ULL << index) : 0)
+
+
+Pieces lastCapturedPiece = NOPIECE;
 
 constexpr unsigned long long rook_magics[64] = {
 	0x8a80104000800020ULL,
@@ -914,6 +918,40 @@ void black_moves(MOVELIST* movelist, Board* bord) {
 	}
 }
 
+bool EvaluateQuick(Board* bord) {
+	if ((bord->extra &= (1ULL << 18)) != 0) {
+		return (((bord->king & bord->white) & all_black_attacks(bord))) == 0;
+	}
+	else {
+		return (((bord->king & bord->black) & all_white_attacks(bord))) == 0;
+	}
+}
+
+void GenLegalMoveList(MOVELIST* list, Board* bord){
+	int i, j;
+	bool okay;
+	MOVELIST list2;
+	list2.count = 0;
+
+	// Generate all moves, including illegal (e.g. put king in check) moves
+	if (white_plays(bord)) {
+		white_moves(&list2, bord);
+	}else {
+		black_moves(&list2, bord);
+	}
+
+	// Loop copying the proven good ones
+	for (i = j = 0; i < list2.count; i++)
+	{
+		makeMove(bord, &list2.moves[i]);
+		okay = EvaluateQuick(bord);
+		popMove(bord, &list2.moves[i]);
+		if (okay)
+			list->moves[j++] = list2.moves[i];
+	}
+	list->count = j;
+}
+
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
 std::string convertTo64CharString(unsigned long long rook, unsigned long long knight, unsigned long long bishop, unsigned long long queen, unsigned long long king, unsigned long long pawn, unsigned long long white, unsigned long long black) {
 	std::string result;
@@ -1084,8 +1122,49 @@ void clearSquare(Board* bord, int square) {
 	bord->black &= placeBit;
 }
 
+Pieces pieceAt(int square, Board* bord) {
+	unsigned long long sq = ((1ULL << 63) >> square);
+	if (bord->white & sq) {
+		if (bord->rook & sq) {
+			return WROOK;
+		}else if (bord->knight & sq) {
+			return WKNIGHT;
+		}else if (bord->bishop & sq) {
+			return WBISCHOP;
+		}else if (bord->queen & sq) {
+			return WQUEEN;
+		}else if (bord->king & sq) {
+			return WKING;
+		}else if (bord->pawn & sq) {
+			return WPAWN;
+		}
+	}
+	else if (bord->white & sq) {
+		if (bord->rook & sq) {
+			return BROOK;
+		}
+		else if (bord->knight & sq) {
+			return BKNIGHT;
+		}
+		else if (bord->bishop & sq) {
+			return BBISCHOP;
+		}
+		else if (bord->queen & sq) {
+			return BQUEEN;
+		}
+		else if (bord->king & sq) {
+			return BKING;
+		}
+		else if (bord->pawn & sq) {
+			return BPAWN;
+		}
+	}
+	return NOPIECE;
+}
+
 // Function to make a move
 void makeMove(Board* bord, Move* move) {
+	lastCapturedPiece = NOPIECE;
 	// Update the pawns bitboard to reflect the move
 	unsigned long long fromBit = ((1ULL << 63) >> move->src);
 	unsigned long long toBit = ((1ULL << 63) >> move->dst);
@@ -1101,6 +1180,7 @@ void makeMove(Board* bord, Move* move) {
 		(move->special == SPECIAL_PROMOTION_ROOK)) {
 		if (((bord->white | bord->black) & toBit) != 0) {
 			//clear all bitboards on the to position
+			lastCapturedPiece = pieceAt(move->dst, bord);
 			bord->rook &= ~toBit;
 			bord->knight &= ~toBit;
 			bord->bishop &= ~toBit;
@@ -1296,4 +1376,198 @@ void makeMove(Board* bord, Move* move) {
 		}
 	}
 	bord->extra ^= (1ULL << 18); // swap playing player
+}
+
+
+// Function to remove a move
+void popMove(Board* bord, Move* move) {
+	// Update the pawns bitboard to reflect the move
+	unsigned long long fromBit = ((1ULL << 63) >> move->src);
+	unsigned long long toBit = ((1ULL << 63) >> move->dst);
+
+	if ((move->special == NOT_SPECIAL) ||
+		(move->special == SPECIAL_WPAWN_2SQUARES) ||
+		(move->special == SPECIAL_BPAWN_2SQUARES) ||
+		(move->special == SPECIAL_WEN_PASSANT) ||
+		(move->special == SPECIAL_BEN_PASSANT) ||
+		(move->special == SPECIAL_PROMOTION_BISHOP) ||
+		(move->special == SPECIAL_PROMOTION_KNIGHT) ||
+		(move->special == SPECIAL_PROMOTION_QUEEN) ||
+		(move->special == SPECIAL_PROMOTION_ROOK)) {
+		
+		// reset the color bitboards
+		if ((bord->white & toBit) != 0) {
+			bord->white |= fromBit; // set the source square
+			bord->white ^= toBit;   // clear the destination square
+		}
+		else if ((bord->black & toBit) != 0) {
+			bord->black |= fromBit; // set the source square
+			bord->black ^= toBit;   // clear the destination square
+		}
+
+
+		if ((bord->rook & toBit) != 0) {
+			/* //TODO
+			if ((((1ULL << 63) >> (A8)) & fromBit) != 0) {
+				bord->extra |= (1ULL << 14); // re add white kingside casteling ability
+			}
+			else if ((((1ULL << 63) >> (H8)) & fromBit) != 0) {
+				bord->extra |= (1ULL << 15); // re add white queenside casteling ability
+			}
+			else if ((((1ULL << 63) >> (A1)) & fromBit) != 0) {
+				bord->extra |= (1ULL << 16); // re add black kingside casteling ability
+			}
+			else if ((((1ULL << 63) >> (H1)) & fromBit) != 0) {
+				bord->extra |= (1ULL << 17); // re add black queenside casteling ability
+			}
+			*/
+			bord->rook |= fromBit; // set the source square
+			bord->rook ^= toBit;   // clear the destination square
+		}
+		else if ((bord->knight & toBit) != 0) {
+			bord->knight |= fromBit; // Clear the source square
+			bord->knight ^= toBit;   // Set the destination square
+		}
+		else if ((bord->bishop & toBit) != 0) {
+			bord->bishop |= fromBit; // Clear the source square
+			bord->bishop ^= toBit;   // Set the destination square
+		}
+		else if ((bord->queen & toBit) != 0) {
+			bord->queen |= fromBit; // Clear the source square
+			bord->queen ^= toBit;   // Set the destination square
+		}
+		else if ((bord->king & toBit) != 0) {
+			/* //TODO
+			if ((bord->white & fromBit) != 0) {
+				bord->extra &= ~((((1ULL << 2) - 1) << 16));
+			}
+			else if ((bord->black & fromBit) != 0) {
+				bord->extra &= ~((((1ULL << 2) - 1) << 14));
+			}
+			*/
+			bord->king |= fromBit; // Clear the source square
+			bord->king ^= toBit;   // Set the destination square
+		}
+		else if ((bord->pawn & toBit) != 0) {
+			bord->pawn |= fromBit; // Clear the source square
+			bord->pawn ^= toBit;   // Set the destination square
+		}
+	}
+
+	//bord->extra &= ~((((1ULL << 7) - 1) << 7)); // remove en passent target //TODO
+	if (move->special != NOT_SPECIAL) {
+		if (move->special == SPECIAL_WPAWN_2SQUARES) {
+			bord->extra &= ~((((1ULL << 7) - 1) << 7));
+		}
+		else if (move->special == SPECIAL_BPAWN_2SQUARES) {
+			bord->extra &= ~((((1ULL << 7) - 1) << 7));
+		}
+		/* //TODO
+		else if (move->special == SPECIAL_WEN_PASSANT) {
+			unsigned long long enPassentBit = ((1ULL << 63) >> (move->dst + 8));
+			//clear all bitboards on the to position of the en passant pawn
+			bord->pawn &= ~enPassentBit;
+			bord->white &= ~enPassentBit;
+			bord->black &= ~enPassentBit;
+		}
+		else if (move->special == SPECIAL_BEN_PASSANT) {
+			unsigned long long enPassentBit = ((1ULL << 63) >> (move->dst - 8));
+			//clear all bitboards on the to position of the en passant pawn
+			bord->pawn &= ~enPassentBit;
+			bord->white &= ~enPassentBit;
+			bord->black &= ~enPassentBit;
+		}
+		*/
+		/* //TODO
+		else if (move->special == SPECIAL_WK_CASTLING) {
+			bord->extra &= ~((((1ULL << 2) - 1) << 16));
+			unsigned long long rookSQ = ((1ULL << 63) >> (H1));
+			bord->rook &= ~rookSQ;
+			bord->white &= ~rookSQ;
+			unsigned long long kingSQ = ((1ULL << 63) >> (E1));
+			bord->king &= ~kingSQ;
+			bord->white &= ~kingSQ;
+
+			unsigned long long newRookSQ = ((1ULL << 63) >> (F1));
+			bord->rook |= newRookSQ;
+			bord->white |= newRookSQ;
+			unsigned long long newKingSQ = ((1ULL << 63) >> (G1));
+			bord->king |= newKingSQ;
+			bord->white |= newKingSQ;
+		}
+		else if (move->special == SPECIAL_BK_CASTLING) {
+			bord->extra &= ~((((1ULL << 2) - 1) << 14));
+			unsigned long long rookSQ = ((1ULL << 63) >> (H8));
+			bord->rook &= ~rookSQ;
+			bord->black &= ~rookSQ;
+			unsigned long long kingSQ = ((1ULL << 63) >> (E8));
+			bord->king &= ~kingSQ;
+			bord->black &= ~kingSQ;
+
+			unsigned long long newRookSQ = ((1ULL << 63) >> (F8));
+			bord->rook |= newRookSQ;
+			bord->black |= newRookSQ;
+			unsigned long long newKingSQ = ((1ULL << 63) >> (G8));
+			bord->king |= newKingSQ;
+			bord->black |= newKingSQ;
+		}
+		else if (move->special == SPECIAL_WQ_CASTLING) {
+			bord->extra &= ~((((1ULL << 2) - 1) << 16));
+			unsigned long long rookSQ = ((1ULL << 63) >> (A1));
+			bord->rook &= ~rookSQ;
+			bord->white &= ~rookSQ;
+			unsigned long long kingSQ = ((1ULL << 63) >> (E1));
+			bord->king &= ~kingSQ;
+			bord->white &= ~kingSQ;
+
+			unsigned long long newRookSQ = ((1ULL << 63) >> (D1));
+			bord->rook |= newRookSQ;
+			bord->white |= newRookSQ;
+			unsigned long long newKingSQ = ((1ULL << 63) >> (C1));
+			bord->king |= newKingSQ;
+			bord->white |= newKingSQ;
+		}
+		else if (move->special == SPECIAL_BQ_CASTLING) {
+			bord->extra &= ~((((1ULL << 2) - 1) << 14));
+			unsigned long long rookSQ = ((1ULL << 63) >> (A8));
+			bord->rook &= ~rookSQ;
+			bord->black &= ~rookSQ;
+			unsigned long long kingSQ = ((1ULL << 63) >> (E8));
+			bord->king &= ~kingSQ;
+			bord->black &= ~kingSQ;
+
+			unsigned long long newRookSQ = ((1ULL << 63) >> (D8));
+			bord->rook |= newRookSQ;
+			bord->black |= newRookSQ;
+			unsigned long long newKingSQ = ((1ULL << 63) >> (C8));
+			bord->king |= newKingSQ;
+			bord->black |= newKingSQ;
+		}
+		*/
+		else if (move->special == SPECIAL_PROMOTION_BISHOP) {
+			unsigned long long promotionPawn = bord->bishop & ((1ULL << move->dst));
+			bord->pawn |= ((1ULL << move->src));
+			bord->bishop &= ~promotionPawn;
+		}
+		else if (move->special == SPECIAL_PROMOTION_KNIGHT) {
+			unsigned long long promotionPawn = bord->knight & ((1ULL << move->dst));
+			bord->pawn |= ((1ULL << move->src));
+			bord->knight &= ~promotionPawn;
+		}
+		else if (move->special == SPECIAL_PROMOTION_QUEEN) {
+			unsigned long long promotionPawn = bord->queen & ((1ULL << move->dst));
+			bord->pawn |= ((1ULL << move->src));
+			bord->queen &= ~promotionPawn;
+		}
+		else if (move->special == SPECIAL_PROMOTION_ROOK) {
+			unsigned long long promotionPawn = bord->rook & ((1ULL << move->dst));
+			bord->pawn |= ((1ULL << move->src));
+			bord->rook &= ~promotionPawn;
+		}
+	}
+	bord->extra ^= (1ULL << 18); // swap playing player
+	// add captured pieces back
+	if (move->capture) {
+		addPiece(bord, lastCapturedPiece, move->dst);
+	}
 }

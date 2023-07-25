@@ -47,7 +47,8 @@ enum Square {
 };
 
 enum Pieces {
-	WROOK = 0,
+	NOPIECE = 0,
+	WROOK,
 	WKNIGHT,
 	WBISCHOP,
 	WQUEEN,
@@ -116,7 +117,8 @@ public:
 	Square  src : 8;
 	Square  dst : 8;
 	SPECIAL special : 8;
-	int     capture : 8;      // ' ' (empty) if move not a capture
+	int     capture : 8;
+	// ' ' (empty) if move not a capture
 	// for some reason Visual C++ 2005 (at least)
 	// blows sizeof(Move) out to 64 bits if
 	// capture is defined as char instead of int
@@ -139,6 +141,7 @@ void clearSquare(Board* bord, int square);
 void printBoard(Board* bord);
 void printBitBoard(unsigned long long bitbord, std::string extra);
 void makeMove(Board* bord, Move* move);
+void popMove(Board* bord, Move* move);
 
 void white_pawn_moves(int position, MOVELIST* movelist, Board* bord);
 void black_pawn_moves(int position, MOVELIST* movelist, Board* bord);
@@ -173,3 +176,5 @@ unsigned long long bitmap_black_knight(int square, Board* bord);
 
 unsigned long long all_white_attacks(Board* bord);
 unsigned long long all_black_attacks(Board* bord);
+
+void GenLegalMoveList(MOVELIST* list, Board* bord);
