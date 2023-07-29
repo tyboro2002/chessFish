@@ -14,7 +14,7 @@ void time_code(Board* bord) {
 
 	for (int i = 0; i < 1000000; ++i) {
 		//bitmap_white_pawns(bord) | bitmap_black_pawns(bord) | bitmap_black_king(bord) | bitmap_white_king(bord);
-		all_white_attacks(bord) | all_black_attacks(bord);
+		all_white_attacks(bord,1) | all_black_attacks(bord,1);
 	}
 
 	// Get the ending timestamp
@@ -26,8 +26,7 @@ void time_code(Board* bord) {
 	std::cout << "Time taken: " << duration << " microseconds" << std::endl;
 }
 
-int main()
-{
+void king_danger_squares_test() {
 	Board bord;
 	Move move;
 	MOVELIST moveList;
@@ -35,13 +34,28 @@ int main()
 	moveList.count = 0;   // set each field for each move
 
 	setup(&bord);
-	//setupEmpty(&bord);
-	//printBoard(&bord);
-	//addPiece(&bord, WKNIGHT, A2);
-	//addPiece(&bord, WKING, C1);
-	//addPiece(&bord, BPAWN, F7);
+	setupEmpty(&bord);
 	printBoard(&bord);
-	
+	addPiece(&bord, BKING, E7);
+	addPiece(&bord, BROOK, E3);
+	addPiece(&bord, WKING, E1);
+	addPiece(&bord, WROOK, E4);
+	addPiece(&bord, WROOK, H7);
+	printBoard(&bord);
+	printBitBoard(all_black_attacks(&bord, 1), "black moves");
+	printBitBoard(bitmap_black_king(E7,&bord), "black king moves");
+	printBitBoard(black_checking_pieces(&bord), "black checking pieces");
+
+	black_king_moves(E7, &moveList, &bord);
+
+	cout << endl;
+}
+
+int main()
+{
+	king_danger_squares_test();
+	//time_code(&bord);
+	/*
 	GenLegalMoveList(&moveList, &bord);
 
 	cout << endl;
@@ -164,6 +178,7 @@ int main()
 	printBoard(&bord);
 
 	time_code(&bord);
+	*/
 
 	/*
     // illegal test moves

@@ -24,6 +24,7 @@ constexpr unsigned long long G        = 0b00000010000000100000001000000010000000
 constexpr unsigned long long H        = 0b0000000100000001000000010000000100000001000000010000000100000001; // A >> 7
 
 constexpr unsigned long long all      = 0b1111111111111111111111111111111111111111111111111111111111111111; // << 8 move row up, >> 8 move row down (left right imposible)
+constexpr unsigned long long nothing  = 0b0000000000000000000000000000000000000000000000000000000000000000; 
 constexpr unsigned long long border   = 0b1111111110000001100000011000000110000001100000011000000111111111; // the border of the field
 constexpr unsigned long long corners  = 0b1000000100000000000000000000000000000000000000000000000010000001;
 constexpr unsigned long long wkcastle = 0b0000000000000000000000000000000000000000000000000000000000000110;
@@ -201,6 +202,14 @@ int countTrailingZeros(unsigned long long number) {
 	return 64; // Return 64 if the input number is 0
 }
 
+int countSetBits(unsigned long long number) {
+	int count = 0;
+	while (number) {
+		count++;
+		number &= (number - 1); // Clear the least significant set bit
+	}
+	return count;
+}
 
 unsigned long long bitmap_all_white_pawns(Board* bord) {
 	unsigned long long wpawns = bord->pawn & bord->white; // all positions of white pawns
@@ -220,22 +229,56 @@ unsigned long long bitmap_all_black_pawns(Board* bord) {
 	return (nonCaptures | (captures & bord->white) | (enPassent & captures));
 }
 
-unsigned long long bitmap_all_white_king(Board* bord) {
-	unsigned long long wkings = bord->king & bord->white; // all positions of white kings
-	unsigned long long all_dirs_non_border = Down((wkings & (~border))) | Up((wkings & (~border))) | Left((wkings & (~border))) | Right((wkings & (~border)));
-	unsigned long long all_dirs_non_corner = Right(wkings & A) | Up(wkings & A) | Down(wkings & A) | Left(wkings & H) | Up(wkings & H) | Down(wkings & H) | Up(wkings & oneRow) | Left(wkings & oneRow) | Right(wkings & oneRow) | Down(wkings & eightRow) | Left(wkings & eightRow) | Right(wkings & eightRow);
-	unsigned long long empty = ~(bord->white | bord->black);
-	unsigned long long castel = ((((wkcastle & empty) == 6) & ((bord->extra >> 17) & 1)) << 1) | ((((wqcastle & empty) == 112) & ((bord->extra >> 16) & 1) & 1) << 5);//| ((bord->extra >> 15) & 1) | ((bord->extra >> 14) & 1);
-	return (((all_dirs_non_border | all_dirs_non_corner)& (~bord->white)) |castel);
+unsigned long long bitmap_white_king_danger_squares(int position, Board* bord) {
+	clearSquare(bord, position);
+	unsigned long long white_king_danger_squares = all_black_attacks(bord,0);
+	addPiece(bord, WKING, position);
+	return white_king_danger_squares;
 }
 
-unsigned long long bitmap_all_black_king(Board* bord) {
-	unsigned long long bkings = bord->king & bord->black; // all positions of black kings
-	unsigned long long all_dirs_non_border = Down((bkings & (~border))) | Up((bkings & (~border))) | Left((bkings & (~border))) | Right((bkings & (~border)));
+unsigned long long bitmap_black_king_danger_squares(int position, Board* bord) {
+	clearSquare(bord, position);
+	unsigned long long black_king_danger_squares = all_white_attacks(bord,0);
+	addPiece(bord, BKING, position);
+	return black_king_danger_squares;
+}
+
+unsigned long long bitmap_all_white_king(Board* bord, int diepte) { // TODO test of het gewoon pseudo legal moves gebruiken nie backfired
+	unsigned long long wkings = bord->king & bord->white; // the square given
+	unsigned long long wkings_not_on_border = wkings & (~border);
+	unsigned long long all_dirs_non_border = Down(wkings_not_on_border) | Up(wkings_not_on_border) | Left(wkings_not_on_border) | Right(wkings_not_on_border) | Down(Left(wkings_not_on_border)) | Down(Right(wkings_not_on_border)) | Up(Left(wkings_not_on_border)) | Up(Right(wkings_not_on_border));
+	unsigned long long all_dirs_non_corner = Right(wkings & A) | Up(wkings & A) | Down(wkings & A) | Left(wkings & H) | Up(wkings & H) | Down(wkings & H) | Up(wkings & oneRow) | Left(wkings & oneRow) | Right(wkings & oneRow) | Down(wkings & eightRow) | Left(wkings & eightRow) | Right(wkings & eightRow);
+	unsigned long long empty = ~(bord->white | bord->black);
+	unsigned long long castel = nothing;
+	if (countTrailingZeros(wkings) == (63-E8)) {
+		castel = ((((wkcastle & empty) == 6) & ((bord->extra >> 17) & 1)) << 1) | ((((wqcastle & empty) == 112) & ((bord->extra >> 16) & 1) & 1) << 5);//| ((bord->extra >> 15) & 1) | ((bord->extra >> 14) & 1);
+	}
+	if (diepte) {
+		return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->white)) | castel);//& (~bitmap_white_king_danger_squares(63 - countTrailingZeros(wkings), bord));
+	}
+	else {
+		return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->white)) | castel) & (~bitmap_white_king_danger_squares(63 - countTrailingZeros(wkings), bord));
+	}
+}
+
+unsigned long long bitmap_all_black_king(Board* bord, int diepte) {	// TODO test of het gewoon pseudo legal moves gebruiken nie backfired
+	unsigned long long bkings = bord->king & bord->black; // the square given
+	unsigned long long bkings_not_on_border = bkings & (~border);
+	unsigned long long all_dirs_non_border = Down(bkings_not_on_border) | Up(bkings_not_on_border) | Left(bkings_not_on_border) | Right(bkings_not_on_border) | Down(Left(bkings_not_on_border)) | Down(Right(bkings_not_on_border)) | Up(Left(bkings_not_on_border)) | Up(Right(bkings_not_on_border));
 	unsigned long long all_dirs_non_corner = Right(bkings & A) | Up(bkings & A) | Down(bkings & A) | Left(bkings & H) | Up(bkings & H) | Down(bkings & H) | Up(bkings & oneRow) | Left(bkings & oneRow) | Right(bkings & oneRow) | Down(bkings & eightRow) | Left(bkings & eightRow) | Right(bkings & eightRow);
 	unsigned long long empty = ~(bord->white | bord->black);
-	unsigned long long castel = (((((bkcastle & empty) == 432345564227567616) & ((bord->extra >> 15) & 1)) << 57)) | (((((bqcastle & empty) == 8070450532247928832) & ((bord->extra >> 14) & 1)) << 61));
-	return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel);
+	unsigned long long castel = nothing;
+	if (countTrailingZeros(bkings) == (63 - E1)) {
+		castel = (((((bkcastle & empty) == 432345564227567616) & ((bord->extra >> 15) & 1)) << 57)) | (((((bqcastle & empty) == 8070450532247928832) & ((bord->extra >> 14) & 1)) << 61));
+	}
+	if (diepte) {
+		return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel);// &(~bitmap_black_king_danger_squares(63 - countTrailingZeros(bkings), bord));
+
+	}
+	else {
+		return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel) &(~bitmap_black_king_danger_squares(63 - countTrailingZeros(bkings), bord));
+
+	}
 }
 
 /*
@@ -294,21 +337,30 @@ unsigned long long bitmap_black_pawns(int position, Board* bord) {
 	unsigned long long enPassent = en_passent_target(bord); // all squares that are able to be en passented
 	return (nonCaptures | (captures & bord->white) | (enPassent & captures));
 }
+
 unsigned long long bitmap_white_king(int position, Board* bord) {
 	unsigned long long wkings = ((1ULL << 63) >> position); // the square given
-	unsigned long long all_dirs_non_border = Down((wkings & (~border))) | Up((wkings & (~border))) | Left((wkings & (~border))) | Right((wkings & (~border)));
+	unsigned long long wkings_not_on_border = wkings & (~border);
+	unsigned long long all_dirs_non_border = Down(wkings_not_on_border) | Up(wkings_not_on_border) | Left(wkings_not_on_border) | Right(wkings_not_on_border) | Down(Left(wkings_not_on_border)) | Down(Right(wkings_not_on_border)) | Up(Left(wkings_not_on_border)) | Up(Right(wkings_not_on_border));
 	unsigned long long all_dirs_non_corner = Right(wkings & A) | Up(wkings & A) | Down(wkings & A) | Left(wkings & H) | Up(wkings & H) | Down(wkings & H) | Up(wkings & oneRow) | Left(wkings & oneRow) | Right(wkings & oneRow) | Down(wkings & eightRow) | Left(wkings & eightRow) | Right(wkings & eightRow);
 	unsigned long long empty = ~(bord->white | bord->black);
-	unsigned long long castel = ((((wkcastle & empty) == 6) & ((bord->extra >> 17) & 1)) << 1) | ((((wqcastle & empty) == 112) & ((bord->extra >> 16) & 1) & 1) << 5);//| ((bord->extra >> 15) & 1) | ((bord->extra >> 14) & 1);
-	return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->white)) | castel);
+	unsigned long long castel = nothing;
+	if (position == E8) {
+		castel = ((((wkcastle & empty) == 6) & ((bord->extra >> 17) & 1)) << 1) | ((((wqcastle & empty) == 112) & ((bord->extra >> 16) & 1) & 1) << 5);//| ((bord->extra >> 15) & 1) | ((bord->extra >> 14) & 1);
+	}
+	return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->white)) | castel) &(~bitmap_white_king_danger_squares(position, bord));
 }
 unsigned long long bitmap_black_king(int position, Board* bord) {
 	unsigned long long bkings = ((1ULL << 63) >> position); // the square given
-	unsigned long long all_dirs_non_border = Down((bkings & (~border))) | Up((bkings & (~border))) | Left((bkings & (~border))) | Right((bkings & (~border)));
+	unsigned long long bkings_not_on_border = bkings & (~border);
+	unsigned long long all_dirs_non_border = Down(bkings_not_on_border) | Up(bkings_not_on_border) | Left(bkings_not_on_border) | Right(bkings_not_on_border) | Down(Left(bkings_not_on_border)) | Down(Right(bkings_not_on_border)) | Up(Left(bkings_not_on_border)) | Up(Right(bkings_not_on_border));
 	unsigned long long all_dirs_non_corner = Right(bkings & A) | Up(bkings & A) | Down(bkings & A) | Left(bkings & H) | Up(bkings & H) | Down(bkings & H) | Up(bkings & oneRow) | Left(bkings & oneRow) | Right(bkings & oneRow) | Down(bkings & eightRow) | Left(bkings & eightRow) | Right(bkings & eightRow);
 	unsigned long long empty = ~(bord->white | bord->black);
-	unsigned long long castel = (((((bkcastle & empty) == 432345564227567616) & ((bord->extra >> 15) & 1)) << 57)) | (((((bqcastle & empty) == 8070450532247928832) & ((bord->extra >> 14) & 1)) << 61));
-	return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel);
+	unsigned long long castel = nothing;
+	if (position == E8) {
+		castel = (((((bkcastle & empty) == 432345564227567616) & ((bord->extra >> 15) & 1)) << 57)) | (((((bqcastle & empty) == 8070450532247928832) & ((bord->extra >> 14) & 1)) << 61));
+	}
+	return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel) &(~bitmap_black_king_danger_squares(position, bord));
 }
 
 // rook attacks
@@ -538,7 +590,37 @@ unsigned long long bitmap_black_knight(int square, Board* bord) {
 	return attacks & (~bord->black);
 }
 
-unsigned long long all_white_attacks(Board* bord) {
+unsigned long long bitmap_white_queen(int square, Board* bord) {
+	return bitmap_white_rook(square, bord) | bitmap_white_bishop(square, bord);
+}
+
+unsigned long long bitmap_black_queen(int square, Board* bord) {
+	return bitmap_black_rook(square, bord) | bitmap_black_bishop(square, bord);
+}
+
+unsigned long long white_checking_pieces(Board* bord) {
+	unsigned long long attackers = 0ULL; // empty bitboard
+	int king_position = 63 - countTrailingZeros(bord->king & bord->white);
+	attackers |= bitmap_white_rook(king_position, bord) & (bord->rook & bord->black);
+	attackers |= bitmap_white_knight(king_position, bord) & (bord->knight & bord->black);
+	attackers |= bitmap_white_bishop(king_position, bord) & (bord->bishop & bord->black);
+	attackers |= bitmap_white_queen(king_position, bord) & (bord->queen & bord->black);
+	attackers |= bitmap_white_pawns(king_position, bord) & (bord->pawn & bord->black);
+	return attackers;
+}
+
+unsigned long long black_checking_pieces(Board* bord) {
+	unsigned long long attackers = 0ULL; // empty bitboard
+	int king_position = 63 - countTrailingZeros(bord->king & bord->black);
+	attackers |= bitmap_black_rook(king_position, bord) & (bord->rook & bord->white);
+	attackers |= bitmap_black_knight(king_position, bord) & (bord->knight & bord->white);
+	attackers |= bitmap_black_bishop(king_position, bord) & (bord->bishop & bord->white);
+	attackers |= bitmap_black_queen(king_position, bord) & (bord->queen & bord->white);
+	attackers |= bitmap_black_pawns(king_position, bord) & (bord->pawn & bord->white);
+	return attackers;
+}
+
+unsigned long long all_white_attacks(Board* bord, int diepte) {
 	unsigned long long wrook = bord->white & bord->rook;
 	unsigned long long wknight = bord->white & bord->knight;
 	unsigned long long wbishop = bord->white & bord->bishop;
@@ -546,6 +628,10 @@ unsigned long long all_white_attacks(Board* bord) {
 	unsigned long long wking = bord->white & bord->king;
 	unsigned long long wpawn = bord->white & bord->pawn;
 	unsigned long long attacks = 0ULL;
+	attacks |= bitmap_all_white_king(bord, diepte - 1);
+	if (countSetBits(white_checking_pieces(bord)) > 1) {
+		return attacks;
+	}
 	while (wrook) {
 		int bitIndex = countTrailingZeros(wrook); // Get the index of the least significant set bit
 		attacks |= bitmap_white_rook(63-bitIndex,bord); // Call the corresponding function with the index of the set bit
@@ -567,12 +653,11 @@ unsigned long long all_white_attacks(Board* bord) {
 		attacks |= bitmap_white_rook(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
 		wqueen &= (wqueen - 1); // Clear the least significant set bit
 	}
-	attacks |= bitmap_all_white_king(bord);
 	attacks |= bitmap_all_white_pawns(bord);
 	return attacks;
 }
 
-unsigned long long all_black_attacks(Board* bord) {
+unsigned long long all_black_attacks(Board* bord, int diepte) {
 	unsigned long long brook = bord->black & bord->rook;
 	unsigned long long bknight = bord->black & bord->knight;
 	unsigned long long bbishop = bord->black & bord->bishop;
@@ -580,6 +665,10 @@ unsigned long long all_black_attacks(Board* bord) {
 	unsigned long long bking = bord->black & bord->king;
 	unsigned long long bpawn = bord->black & bord->pawn;
 	unsigned long long attacks = 0ULL;
+	attacks |= bitmap_all_black_king(bord, diepte-1);
+	if (countSetBits(black_checking_pieces(bord)) > 1) {
+		return attacks;
+	}
 	while (brook) {
 		int bitIndex = countTrailingZeros(brook); // Get the index of the least significant set bit
 		attacks |= bitmap_black_rook(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
@@ -601,7 +690,6 @@ unsigned long long all_black_attacks(Board* bord) {
 		attacks |= bitmap_black_rook(63 - bitIndex, bord); // Call the corresponding function with the index of the set bit
 		bqueen &= (bqueen - 1); // Clear the least significant set bit
 	}
-	attacks |= bitmap_all_black_king(bord);
 	attacks |= bitmap_all_black_pawns(bord);
 	return attacks;
 }
@@ -851,6 +939,14 @@ void white_moves(MOVELIST* movelist, Board* bord) {
 	unsigned long long wqueen = bord->white & bord->queen;
 	unsigned long long wking = bord->white & bord->king;
 	unsigned long long wpawn = bord->white & bord->pawn;
+	while (wking) {
+		int bitIndex = countTrailingZeros(wking); // Get the index of the least significant set bit
+		white_king_moves(63 - bitIndex, movelist, bord); // Call the corresponding function with the index of the set bit
+		wking &= (wking - 1); // Clear the least significant set bit
+	}
+	if (countSetBits(white_checking_pieces(bord)) > 1) {
+		return;
+	}
 	while (wrook) {
 		int bitIndex = countTrailingZeros(wrook); // Get the index of the least significant set bit
 		white_rook_moves(63 - bitIndex,movelist,bord); // Call the corresponding function with the index of the set bit
@@ -870,14 +966,11 @@ void white_moves(MOVELIST* movelist, Board* bord) {
 		int bitIndex = countTrailingZeros(wqueen); // Get the index of the least significant set bit
 		white_queen_moves(63 - bitIndex, movelist, bord); // Call the corresponding function with the index of the set bit
 		wqueen &= (wqueen - 1); // Clear the least significant set bit
-	}while (wpawn) {
+	}
+	while (wpawn) {
 		int bitIndex = countTrailingZeros(wpawn); // Get the index of the least significant set bit
 		white_pawn_moves(63 - bitIndex, movelist, bord); // Call the corresponding function with the index of the set bit
 		wpawn &= (wpawn - 1); // Clear the least significant set bit
-	}while (wking) {
-		int bitIndex = countTrailingZeros(wking); // Get the index of the least significant set bit
-		white_king_moves(63 - bitIndex, movelist, bord); // Call the corresponding function with the index of the set bit
-		wking &= (wking - 1); // Clear the least significant set bit
 	}
 }
 
@@ -888,6 +981,14 @@ void black_moves(MOVELIST* movelist, Board* bord) {
 	unsigned long long bqueen = bord->black & bord->queen;
 	unsigned long long bking = bord->black & bord->king;
 	unsigned long long bpawn = bord->black & bord->pawn;
+	while (bking) {
+		int bitIndex = countTrailingZeros(bking); // Get the index of the least significant set bit
+		black_king_moves(63 - bitIndex, movelist, bord); // Call the corresponding function with the index of the set bit
+		bking &= (bking - 1); // Clear the least significant set bit
+	}
+	if (countSetBits(black_checking_pieces(bord)) > 1) {
+		return;
+	}
 	while (brook) {
 		int bitIndex = countTrailingZeros(brook); // Get the index of the least significant set bit
 		black_rook_moves(63 - bitIndex, movelist, bord); // Call the corresponding function with the index of the set bit
@@ -907,23 +1008,20 @@ void black_moves(MOVELIST* movelist, Board* bord) {
 		int bitIndex = countTrailingZeros(bqueen); // Get the index of the least significant set bit
 		black_queen_moves(63 - bitIndex, movelist, bord); // Call the corresponding function with the index of the set bit
 		bqueen &= (bqueen - 1); // Clear the least significant set bit
-	}while (bpawn) {
+	}
+	while (bpawn) {
 		int bitIndex = countTrailingZeros(bpawn); // Get the index of the least significant set bit
 		black_pawn_moves(63 - bitIndex, movelist, bord); // Call the corresponding function with the index of the set bit
 		bpawn &= (bpawn - 1); // Clear the least significant set bit
-	}while (bking) {
-		int bitIndex = countTrailingZeros(bking); // Get the index of the least significant set bit
-		black_king_moves(63 - bitIndex, movelist, bord); // Call the corresponding function with the index of the set bit
-		bking &= (bking - 1); // Clear the least significant set bit
 	}
 }
 
 bool EvaluateQuick(Board* bord) {
 	if ((bord->extra &= (1ULL << 18)) != 0) {
-		return (((bord->king & bord->white) & all_black_attacks(bord))) == 0;
+		return (((bord->king & bord->white) & all_black_attacks(bord, 1))) == 0;
 	}
 	else {
-		return (((bord->king & bord->black) & all_white_attacks(bord))) == 0;
+		return (((bord->king & bord->black) & all_white_attacks(bord,1))) == 0;
 	}
 }
 
@@ -1035,7 +1133,7 @@ void printBoard(Board* bord){
 	std::cout << "  abcdefgh" << endl;
 
 	//printBitBoard(all_white_attacks(bord), "all white attacks");
-	printBitBoard(en_passent_target(bord), "all white pawn attacks");
+	//printBitBoard(en_passent_target(bord), "all white pawn attacks");
 	//cout << std::bitset<18>(bord->extra) << endl;
 	//cout << std::bitset<64>((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))) << endl;
 	//cout << std::bitset<64>((bord->extra & ((1ULL << 13))) >> 13) << endl;

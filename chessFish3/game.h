@@ -160,8 +160,11 @@ void black_moves(MOVELIST* movelist, Board* bord);
 
 unsigned long long bitmap_all_white_pawns(Board* bord);
 unsigned long long bitmap_all_black_pawns(Board* bord);
-unsigned long long bitmap_all_white_king(Board* bord);
-unsigned long long bitmap_all_black_king(Board* bord);
+unsigned long long bitmap_all_white_king(Board* bord, int diepte);
+unsigned long long bitmap_all_black_king(Board* bord, int diepte);
+
+unsigned long long white_checking_pieces(Board* bord);
+unsigned long long black_checking_pieces(Board* bord);
 
 unsigned long long bitmap_white_pawns(int position, Board* bord);
 unsigned long long bitmap_black_pawns(int position, Board* bord);
@@ -174,7 +177,7 @@ unsigned long long bitmap_black_bishop(int square, Board* bord);
 unsigned long long bitmap_white_knight(int square, Board* bord);
 unsigned long long bitmap_black_knight(int square, Board* bord);
 
-unsigned long long all_white_attacks(Board* bord);
-unsigned long long all_black_attacks(Board* bord);
+unsigned long long all_white_attacks(Board* bord, int diepte);
+unsigned long long all_black_attacks(Board* bord, int diepte);
 
 void GenLegalMoveList(MOVELIST* list, Board* bord);
