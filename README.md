@@ -10,5 +10,6 @@ I want to test a lot of aproaches for the move selection when the basic chess is
       - with move ordening
       - with killer moves ?
   - (machine learning aproach ?)
+    
 I also want a interface where i can choose and visualize bitboards and play moves.
 It would be handy to have a interface where i can let 2 versions of the engine play each other.
