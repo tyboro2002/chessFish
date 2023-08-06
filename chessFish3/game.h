@@ -5,6 +5,8 @@
 
 #include <iostream>
 
+typedef unsigned long long U64;
+
 // Calculate an upper limit to the length of a list of moves
 #define MAXMOVES (27 + 2*13 + 2*14 + 2*8 + 8 + 8*4  +  3*27)
 				//[Q   2*B    2*R    2*N   K   8*P] +  [3*Q]
@@ -14,17 +16,17 @@
 // TODO: Reference additional headers your program requires here.
 struct Board {
 	// pieces
-	unsigned long long rook;
-	unsigned long long knight;
-	unsigned long long bishop;
-	unsigned long long queen;
-	unsigned long long king;
-	unsigned long long pawn;
+	U64 rook;
+	U64 knight;
+	U64 bishop;
+	U64 queen;
+	U64 king;
+	U64 pawn;
 	// colors
-	unsigned long long white;
-	unsigned long long black;
+	U64 white;
+	U64 black;
 	// extra info
-	unsigned long long extra;
+	U64 extra;
 	// extra info consists of 19 bits meaning
 	// 1) white to play
 	// 2) white kingside casteling aviable
@@ -139,7 +141,7 @@ void setupEmpty(Board* bord);
 void addPiece(Board* bord, Pieces piece, int square);
 void clearSquare(Board* bord, int square);
 void printBoard(Board* bord);
-void printBitBoard(unsigned long long bitbord, std::string extra);
+void printBitBoard(U64 bitbord, std::string extra);
 void makeMove(Board* bord, Move* move);
 void popMove(Board* bord, Move* move);
 
@@ -158,26 +160,26 @@ void black_king_moves(int position, MOVELIST* movelist, Board* bord);
 void white_moves(MOVELIST* movelist, Board* bord);
 void black_moves(MOVELIST* movelist, Board* bord);
 
-unsigned long long bitmap_all_white_pawns(Board* bord);
-unsigned long long bitmap_all_black_pawns(Board* bord);
-unsigned long long bitmap_all_white_king(Board* bord, int diepte);
-unsigned long long bitmap_all_black_king(Board* bord, int diepte);
+U64 bitmap_all_white_pawns(Board* bord);
+U64 bitmap_all_black_pawns(Board* bord);
+U64 bitmap_all_white_king(Board* bord, int diepte);
+U64 bitmap_all_black_king(Board* bord, int diepte);
 
-unsigned long long white_checking_pieces(Board* bord);
-unsigned long long black_checking_pieces(Board* bord);
+U64 white_checking_pieces(Board* bord);
+U64 black_checking_pieces(Board* bord);
 
-unsigned long long bitmap_white_pawns(int position, Board* bord);
-unsigned long long bitmap_black_pawns(int position, Board* bord);
-unsigned long long bitmap_white_king(int position, Board* bord);
-unsigned long long bitmap_black_king(int position, Board* bord);
-unsigned long long bitmap_white_rook(int position, Board* bord);
-unsigned long long bitmap_black_rook(int position, Board* bord);
-unsigned long long bitmap_white_bishop(int square, Board* bord);
-unsigned long long bitmap_black_bishop(int square, Board* bord);
-unsigned long long bitmap_white_knight(int square, Board* bord);
-unsigned long long bitmap_black_knight(int square, Board* bord);
+U64 bitmap_white_pawns(int position, Board* bord);
+U64 bitmap_black_pawns(int position, Board* bord);
+U64 bitmap_white_king(int position, Board* bord);
+U64 bitmap_black_king(int position, Board* bord);
+U64 bitmap_white_rook(int position, Board* bord);
+U64 bitmap_black_rook(int position, Board* bord);
+U64 bitmap_white_bishop(int square, Board* bord);
+U64 bitmap_black_bishop(int square, Board* bord);
+U64 bitmap_white_knight(int square, Board* bord);
+U64 bitmap_black_knight(int square, Board* bord);
 
-unsigned long long all_white_attacks(Board* bord, int diepte);
-unsigned long long all_black_attacks(Board* bord, int diepte);
+U64 all_white_attacks(Board* bord, int diepte);
+U64 all_black_attacks(Board* bord, int diepte);
 
 void GenLegalMoveList(MOVELIST* list, Board* bord);
