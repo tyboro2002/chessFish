@@ -42,6 +42,24 @@ constexpr U64 bqcastle = 0b01110000000000000000000000000000000000000000000000000
 
 Pieces lastCapturedPiece = NOPIECE;
 
+// Function to copy values from bordIn to bordOut
+void copyBoard(const Board* bordIn, Board* bordOut) {
+	if (!bordIn || !bordOut) {
+		return; // Handle nullptr input
+	}
+
+	// Copy the members from bordIn to bordOut
+	bordOut->rook = bordIn->rook;
+	bordOut->knight = bordIn->knight;
+	bordOut->bishop = bordIn->bishop;
+	bordOut->queen = bordIn->queen;
+	bordOut->king = bordIn->king;
+	bordOut->pawn = bordIn->pawn;
+	bordOut->white = bordIn->white;
+	bordOut->black = bordIn->black;
+	bordOut->extra = bordIn->extra;
+}
+
 constexpr U64 rook_magics[64] = {
 	0x8a80104000800020ULL,
 	0x140002000100040ULL,
@@ -203,6 +221,14 @@ int countTrailingZeros(U64 number) {
 	return 64; // Return 64 if the input number is 0
 }
 
+int getFirst1BitSquare(U64 number) {
+	unsigned long index;
+	if (_BitScanForward64(&index, number)) {
+		return 63-static_cast<int>(index);
+	}
+	return -1; // Return 64 if the input number is 0
+}
+
 int countSetBits(U64 number) {
 	int count = 0;
 	while (number) {
@@ -210,6 +236,17 @@ int countSetBits(U64 number) {
 		number &= (number - 1); // Clear the least significant set bit
 	}
 	return count;
+}
+
+std::string squareToString(Square square) {
+	std::string file = "ABCDEFGH";
+	std::string rank = "12345678";
+
+	int index = static_cast<int>(square);
+	int fileIndex = index % 8;
+	int rankIndex = index / 8;
+
+	return std::string(1, file[fileIndex]) + rank[rankIndex];
 }
 
 U64 bitmap_all_white_pawns(Board* bord) {
@@ -621,6 +658,116 @@ U64 black_checking_pieces(Board* bord) {
 	return attackers;
 }
 
+U64 squaresBetweenBitmap(int startSquare, int endSquare) {
+	startSquare = 63 - startSquare;
+	endSquare = 63 - endSquare;
+	U64 result = 0ULL;
+	/* //removed because its faster without and not realy needed (i hope)
+	// Ensure valid input range (0-63)
+	if (startSquare < 0 || startSquare > 63 || endSquare < 0 || endSquare > 63) {
+		return result;
+	}
+	*/
+
+	// Swap if endSquare is smaller than startSquare
+	if (endSquare < startSquare) {
+		std::swap(startSquare, endSquare);
+	}
+
+	// Calculate the difference in ranks (rows) and files (columns)
+	int rankDifference = (endSquare / 8) - (startSquare / 8);
+	int fileDifference = (endSquare % 8) - (startSquare % 8);
+
+	/* //removed because normaly all inputs are valid
+	if(rankDifference != fileDifference){
+		return 0ULL;
+	}
+	*/
+
+	// Calculate the direction of movement for rank and file
+	int rankDirection = (rankDifference > 0) ? 1 : (rankDifference < 0) ? -1 : 0;
+	int fileDirection = (fileDifference > 0) ? 1 : (fileDifference < 0) ? -1 : 0;
+
+	int currentSquare = startSquare + rankDirection * 8 + fileDirection;
+	while (currentSquare != endSquare) {
+		result |= (1ULL << currentSquare);
+		currentSquare += rankDirection * 8 + fileDirection;
+	}
+
+	return result;
+}
+
+/*
+* returns all 1 if no checking pieces or path to white king if there are
+*/
+U64 white_checking_bitmap(Board* bord) {
+	U64 att_path = 0ULL; //empty bitboard
+	U64 checks = white_checking_pieces(bord);
+	U64 att_rooks = checks & bord->rook;
+	U64 att_knight = checks & bord->knight;
+	U64 att_bishop = checks & bord->bishop;
+	U64 att_queen = checks & bord->queen;
+	U64 att_pawn = checks & bord->pawn;
+	int wking_square = getFirst1BitSquare(bord->king & bord->white);
+	while (att_rooks) {
+		int rook_square = getFirst1BitSquare(att_rooks);
+		att_path |= squaresBetweenBitmap(rook_square, wking_square);
+		att_rooks &= (att_rooks - 1);
+	}
+	while (att_bishop) {
+		int bishop_square = getFirst1BitSquare(att_bishop);
+		att_path |= squaresBetweenBitmap(bishop_square, wking_square);
+		att_bishop &= (att_bishop - 1);
+	}
+	while (att_queen) {
+		int queen_square = getFirst1BitSquare(att_queen);
+		att_path |= squaresBetweenBitmap(queen_square, wking_square);
+		att_queen &= (att_queen - 1);
+	}
+	att_path |= att_knight;
+	att_path |= att_pawn;
+	if ((att_path | checks) == 0) {
+		return all;
+	}
+	return att_path | checks;
+}
+
+/*
+* returns all 1 if no checking pieces or path to black king if there are
+*/
+U64 black_checking_bitmap(Board* bord) {
+	U64 att_path = 0ULL; //empty bitboard
+	U64 checks = black_checking_pieces(bord);
+	U64 att_rooks = checks & bord->rook;
+	U64 att_knight = checks & bord->knight;
+	U64 att_bishop = checks & bord->bishop;
+	U64 att_queen = checks & bord->queen;
+	U64 att_pawn = checks & bord->pawn;
+	int bking_square = getFirst1BitSquare(bord->king & bord->black);
+	while (att_rooks) {
+		int rook_square = getFirst1BitSquare(att_rooks);
+		att_path |= squaresBetweenBitmap(rook_square, bking_square);
+		att_rooks &= (att_rooks - 1);
+	}
+	while (att_bishop) {
+		int bishop_square = getFirst1BitSquare(att_bishop);
+		att_path |= squaresBetweenBitmap(bishop_square, bking_square);
+		att_bishop &= (att_bishop - 1);
+	}
+	while (att_queen) {
+		int queen_square = getFirst1BitSquare(att_queen);
+		att_path |= squaresBetweenBitmap(queen_square, bking_square);
+		att_queen &= (att_queen - 1);
+	}
+	att_path |= att_knight;
+	att_path |= att_pawn;
+	if ((att_path | checks) == 0) {
+		return all;
+	}
+	return att_path | checks;
+}
+
+
 U64 all_white_attacks(Board* bord, int diepte) {
 	U64 wrook = bord->white & bord->rook;
 	U64 wknight = bord->white & bord->knight;
@@ -655,7 +802,7 @@ U64 all_white_attacks(Board* bord, int diepte) {
 		wqueen &= (wqueen - 1); // Clear the least significant set bit
 	}
 	attacks |= bitmap_all_white_pawns(bord);
-	return attacks;
+	return attacks & white_checking_bitmap(bord);
 }
 
 U64 all_black_attacks(Board* bord, int diepte) {
@@ -692,14 +839,14 @@ U64 all_black_attacks(Board* bord, int diepte) {
 		bqueen &= (bqueen - 1); // Clear the least significant set bit
 	}
 	attacks |= bitmap_all_black_pawns(bord);
-	return attacks;
+	return attacks & black_checking_bitmap(bord);
 }
 
 /*
 * all moves generating and putting them in a movelist
 */
 void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_white_pawns(position, bord);
+	U64 destinations = bitmap_white_pawns(position, bord) & white_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -723,7 +870,7 @@ void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void black_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_black_pawns(position, bord);
+	U64 destinations = bitmap_black_pawns(position, bord) & black_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -749,7 +896,7 @@ void black_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void white_rook_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_white_rook(position, bord);
+	U64 destinations = bitmap_white_rook(position, bord) & white_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -766,7 +913,7 @@ void white_rook_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void black_rook_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_black_rook(position, bord);
+	U64 destinations = bitmap_black_rook(position, bord) & black_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -783,7 +930,7 @@ void black_rook_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void white_knight_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_white_knight(position, bord);
+	U64 destinations = bitmap_white_knight(position, bord) & white_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -800,7 +947,7 @@ void white_knight_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void black_knight_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_black_knight(position, bord);
+	U64 destinations = bitmap_black_knight(position, bord) & black_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -817,7 +964,7 @@ void black_knight_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void white_bishop_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_white_bishop(position, bord);
+	U64 destinations = bitmap_white_bishop(position, bord) & white_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -834,7 +981,7 @@ void white_bishop_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void black_bishop_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_black_bishop(position, bord);
+	U64 destinations = bitmap_black_bishop(position, bord) & black_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -851,7 +998,7 @@ void black_bishop_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void white_queen_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_white_bishop(position, bord) | bitmap_white_rook(position, bord) ;
+	U64 destinations = (bitmap_white_bishop(position, bord) | bitmap_white_rook(position, bord)) & white_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -868,7 +1015,7 @@ void white_queen_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void black_queen_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_black_bishop(position, bord) | bitmap_black_rook(position, bord);
+	U64 destinations = (bitmap_black_bishop(position, bord) | bitmap_black_rook(position, bord)) & black_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -885,7 +1032,7 @@ void black_queen_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void white_king_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_white_king(position, bord);
+	U64 destinations = bitmap_white_king(position, bord) & ~white_checking_bitmap(bord);;
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -909,7 +1056,7 @@ void white_king_moves(int position, MOVELIST* movelist, Board* bord) {
 }
 
 void black_king_moves(int position, MOVELIST* movelist, Board* bord) {
-	U64 destinations = bitmap_black_king(position, bord);
+	U64 destinations = bitmap_black_king(position, bord) & ~black_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
@@ -1026,7 +1173,17 @@ bool EvaluateQuick(Board* bord) {
 	}
 }
 
-void GenLegalMoveList(MOVELIST* list, Board* bord){
+void GenMoveList(MOVELIST* list, Board* bord) {
+	// Generate all moves, including illegal (e.g. put king in check) moves
+	if (white_plays(bord)) {
+		white_moves(list, bord);
+	}
+	else {
+		black_moves(list, bord);
+	}
+}
+
+void GenLegalMoveList(MOVELIST* list, Board* bord) {
 	int i, j;
 	bool okay;
 	MOVELIST list2;
@@ -1035,21 +1192,24 @@ void GenLegalMoveList(MOVELIST* list, Board* bord){
 	// Generate all moves, including illegal (e.g. put king in check) moves
 	if (white_plays(bord)) {
 		white_moves(&list2, bord);
-	}else {
+	}
+	else {
 		black_moves(&list2, bord);
 	}
-
+	Board bordCopy;
 	// Loop copying the proven good ones
 	for (i = j = 0; i < list2.count; i++)
 	{
-		makeMove(bord, &list2.moves[i]);
+		copyBoard(bord, &bordCopy);
+		makeMove(&bordCopy, &list2.moves[i]);
 		okay = EvaluateQuick(bord);
-		popMove(bord, &list2.moves[i]);
+		//popMove(bord, &list2.moves[i]);
 		if (okay)
 			list->moves[j++] = list2.moves[i];
 	}
 	list->count = j;
 }
+
 
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
 std::string convertTo64CharString(U64 rook, U64 knight, U64 bishop, U64 queen, U64 king, U64 pawn, U64 white, U64 black) {
@@ -1259,6 +1419,289 @@ Pieces pieceAt(int square, Board* bord) {
 		}
 	}
 	return NOPIECE;
+}
+
+Square stringToSquare(std::string inp) {
+	if (inp == "a8") {
+		return A8;
+	}
+	else if (inp == "a7") {
+		return A7;
+	}
+	else if (inp == "a6") {
+		return A6;
+	}
+	else if (inp == "a5") {
+		return A5;
+	}
+	else if (inp == "a4") {
+		return A4;
+	}
+	else if (inp == "a3") {
+		return A3;
+	}
+	else if (inp == "a2") {
+		return A2;
+	}
+	else if (inp == "a1") {
+		return A1;
+	}
+	else if (inp == "b8") {
+		return B8;
+	}
+	else if (inp == "b7") {
+		return B7;
+	}
+	else if (inp == "b6") {
+		return B6;
+	}
+	else if (inp == "b5") {
+		return B5;
+	}
+	else if (inp == "b4") {
+		return B4;
+	}
+	else if (inp == "b3") {
+		return B3;
+	}
+	else if (inp == "b2") {
+		return B2;
+	}
+	else if (inp == "b1") {
+		return B1;
+	}else if (inp == "c8") {
+		return C8;
+	}
+	else if (inp == "c7") {
+		return C7;
+	}
+	else if (inp == "c6") {
+		return C6;
+	}
+	else if (inp == "c5") {
+		return C5;
+	}
+	else if (inp == "c4") {
+		return C4;
+	}
+	else if (inp == "c3") {
+		return C3;
+	}
+	else if (inp == "c2") {
+		return C2;
+	}
+	else if (inp == "c1") {
+		return C1;
+	}else if (inp == "d8") {
+		return D8;
+	}
+	else if (inp == "d7") {
+		return D7;
+	}
+	else if (inp == "d6") {
+		return D6;
+	}
+	else if (inp == "d5") {
+		return D5;
+	}
+	else if (inp == "d4") {
+		return D4;
+	}
+	else if (inp == "d3") {
+		return D3;
+	}
+	else if (inp == "d2") {
+		return D2;
+	}
+	else if (inp == "d1") {
+		return D1;
+	}else if (inp == "e8") {
+		return E8;
+	}
+	else if (inp == "e7") {
+		return E7;
+	}
+	else if (inp == "e6") {
+		return E6;
+	}
+	else if (inp == "e5") {
+		return E5;
+	}
+	else if (inp == "e4") {
+		return E4;
+	}
+	else if (inp == "e3") {
+		return E3;
+	}
+	else if (inp == "e2") {
+		return E2;
+	}
+	else if (inp == "e1") {
+		return E1;
+	}else if (inp == "f8") {
+		return F8;
+	}
+	else if (inp == "f7") {
+		return F7;
+	}
+	else if (inp == "f6") {
+		return F6;
+	}
+	else if (inp == "f5") {
+		return F5;
+	}
+	else if (inp == "f4") {
+		return F4;
+	}
+	else if (inp == "f3") {
+		return F3;
+	}
+	else if (inp == "f2") {
+		return F2;
+	}
+	else if (inp == "f1") {
+		return F1;
+	}else if (inp == "g8") {
+		return G8;
+	}
+	else if (inp == "g7") {
+		return G7;
+	}
+	else if (inp == "g6") {
+		return G6;
+	}
+	else if (inp == "g5") {
+		return G5;
+	}
+	else if (inp == "g4") {
+		return G4;
+	}
+	else if (inp == "g3") {
+		return G3;
+	}
+	else if (inp == "g2") {
+		return G2;
+	}
+	else if (inp == "g1") {
+		return G1;
+	}else if (inp == "h8") {
+		return H8;
+	}
+	else if (inp == "h7") {
+		return H7;
+	}
+	else if (inp == "h6") {
+		return H6;
+	}
+	else if (inp == "h5") {
+		return H5;
+	}
+	else if (inp == "h4") {
+		return H4;
+	}
+	else if (inp == "h3") {
+		return H3;
+	}
+	else if (inp == "h2") {
+		return H2;
+	}
+	else if (inp == "h1") {
+		return H1;
+	}
+	return A8;
+}
+
+void readInFen(Board* bord, std::string* fen) {
+	fen->erase(std::remove(fen->begin(), fen->end(), '/'), fen->end());
+	cout << *fen << endl;
+	int index = -1;
+	for (char c : *fen) {
+		if (c != ' ') {
+			if (std::isdigit(c)) {
+				index += (c - '0');
+			}
+			else {
+				index += 1;
+			}
+			//std::cout << c << " at " << index << endl;
+			if (c == 'r') {
+				addPiece(bord, BROOK, index);
+			}else if (c == 'n') {
+				addPiece(bord, BKNIGHT, index);
+			}else if (c == 'b') {
+				addPiece(bord, BBISCHOP, index);
+			}else if (c == 'q') {
+				addPiece(bord, BQUEEN, index);
+			}else if (c == 'k') {
+				addPiece(bord, BKING, index);
+			}else if (c == 'p') {
+				addPiece(bord, BPAWN, index);
+			}else if (c == 'R') {
+				addPiece(bord, WROOK, index);
+			}else if (c == 'N') {
+				addPiece(bord, WKNIGHT, index);
+			}else if (c == 'B') {
+				addPiece(bord, WBISCHOP, index);
+			}else if (c == 'Q') {
+				addPiece(bord, WQUEEN, index);
+			}else if (c == 'K') {
+				addPiece(bord, WKING, index);
+			}else if (c == 'P') {
+				addPiece(bord, WPAWN, index);
+			}
+		}
+		else {
+			printBoard(bord);
+			// Find the position of the first space
+			size_t spacePos = fen->find(' ');
+
+			// Extract the substring starting from the character immediately after the space
+			std::string result = fen->substr(spacePos + 1);
+			bord->extra = 0b0000000000000000000;
+			if (result.front() == 'w') {
+				bord->extra |= 0b1000000000000000000;
+			}
+			result.erase(0, 2);
+			if (result.front() == 'K') {
+				result.erase(0, 1);
+				bord->extra |= 0b0100000000000000000;
+			}
+			if (result.front() == 'Q') {
+				result.erase(0, 1);
+				bord->extra |= 0b0010000000000000000;
+			}
+			if (result.front() == 'k') {
+				result.erase(0, 1);
+				bord->extra |= 0b0001000000000000000;
+			}
+			if (result.front() == 'q') {
+				result.erase(0, 1);
+				bord->extra |= 0b0000100000000000000;
+			}
+			if (result.front() == '-') {
+				result.erase(0, 1);
+			}
+			result.erase(0, 1);
+			if (result.front() != '-') {
+				std::string temp = result.substr(0,2);
+				Square enPassent = stringToSquare(temp);
+				result.erase(0, 3);
+				bord->extra |= 0b0000010000000000000;
+				bord->extra |= (enPassent << 7);
+			}
+			else {
+				result.erase(0, 2);
+			}
+			std::string halfm = result.substr(0, result.find(' '));
+			int halfmcount = std::stoi(halfm);
+			bord->extra |= (halfmcount);
+
+
+			//std::cout << std::bitset<19>(bord->extra) << std::endl;
+			//std::cout << "Stripped string: " << result << std::endl;
+			break; // Stop when a space is encountered
+		}
+	}
 }
 
 // Function to make a move

@@ -136,6 +136,8 @@ struct MOVELIST{
 	Move moves[MAXMOVES];
 };
 
+int countSetBits(U64 number);
+
 void setup(Board* bord);
 void setupEmpty(Board* bord);
 void addPiece(Board* bord, Pieces piece, int square);
@@ -182,4 +184,16 @@ U64 bitmap_black_knight(int square, Board* bord);
 U64 all_white_attacks(Board* bord, int diepte);
 U64 all_black_attacks(Board* bord, int diepte);
 
+//void GenLegalMoveList(MOVELIST* list, Board* bord);
+void GenMoveList(MOVELIST* list, Board* bord);
 void GenLegalMoveList(MOVELIST* list, Board* bord);
+
+U64 squaresBetweenBitmap(int startSquare, int endSquare);
+U64 white_checking_bitmap(Board* bord);
+U64 black_checking_bitmap(Board* bord);
+
+void copyBoard(const Board* bordIn, Board* bordOut);
+void readInFen(Board* bord, std::string* fen);
+
+
+std::string squareToString(Square square);
