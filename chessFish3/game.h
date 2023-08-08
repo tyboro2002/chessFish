@@ -197,3 +197,5 @@ void readInFen(Board* bord, std::string* fen);
 
 
 std::string squareToString(Square square);
+std::string specialToString(SPECIAL special);
+std::string moveToString(Move* move);

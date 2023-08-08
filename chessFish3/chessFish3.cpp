@@ -23,9 +23,9 @@ int generateRandomNumber(int upperBound) {
 void makeRandomMove(Board* bord, MOVELIST* moveList) {
 	GenLegalMoveList(moveList, bord);
 	int choosen = generateRandomNumber(moveList->count);
-	cout << moveList->count << endl;
+	cout << "Randomly selected: " << moveToString(&moveList->moves[choosen]) << endl;
 	makeMove(bord, &moveList->moves[choosen]);
-	printBoard(bord);
+	//printBoard(bord);
 }
 
 /*
@@ -209,6 +209,71 @@ void randomMoveTest() {
 	}
 }
 
+/*
+* functions for the actual engine
+*/
+void askForMove(Board* bord, Move* move) {
+	MOVELIST moveList;
+	// Clear move list
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, bord);
+	for (int i = 0; i < moveList.count; i++) {
+		cout << i << ") " << moveToString(&moveList.moves[i]) << endl;
+	}
+	cout << "Enter the number of the move you want to play" << endl;
+	int moveNumber;
+	std::cin >> moveNumber;
+	move->src = moveList.moves[moveNumber].src;
+	move->dst = moveList.moves[moveNumber].dst;
+	move->special = moveList.moves[moveNumber].special;
+	move->capture = moveList.moves[moveNumber].capture;
+}
+
+void printEngines() {
+	cout << "0) the human player" << endl;
+	cout << "1) the random engine" << endl;
+}
+void runGame() {
+	Board bord;
+	Move move;
+	setup(&bord);
+	cout << "wich engine do you want to player A to be?" << endl;
+	printEngines();
+	int engineNumberA;
+	cin >> engineNumberA;
+	cout << "wich engine do you want to player B to be?" << endl;
+	printEngines();
+	int engineNumberB;
+	cin >> engineNumberB;
+	for (int i = 0; i < 10; i++) {
+		printBoard(&bord);
+		if (engineNumberA == 0) {
+			askForMove(&bord, &move);
+			cout << "You selected: " << moveToString(&move) << endl;
+			makeMove(&bord, &move);
+		}else if (engineNumberA == 1) {
+			MOVELIST moveList;
+			// Clear move list
+			moveList.count = 0;   // set each field for each move
+			GenLegalMoveList(&moveList, &bord);
+			makeRandomMove(&bord, &moveList);
+		}
+		printBoard(&bord);
+		if (engineNumberB == 0) {
+			askForMove(&bord, &move);
+			cout << "You selected: " << moveToString(&move) << endl;
+			makeMove(&bord, &move);
+		}
+		else if (engineNumberB == 1) {
+			MOVELIST moveList;
+			// Clear move list
+			moveList.count = 0;   // set each field for each move
+			GenLegalMoveList(&moveList, &bord);
+			makeRandomMove(&bord, &moveList);
+		}
+	}
+}
+
 int main()
 {
 	//king_danger_squares_test();
@@ -220,6 +285,7 @@ int main()
 	//time_bitwise_code();
 	//fen_test();
 	//legalMoveTest();
-	randomMoveTest();
+	//randomMoveTest();
+	runGame();
 	return 0;
 }

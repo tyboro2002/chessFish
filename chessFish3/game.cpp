@@ -244,9 +244,20 @@ std::string squareToString(Square square) {
 
 	int index = static_cast<int>(square);
 	int fileIndex = index % 8;
-	int rankIndex = index / 8;
+	int rankIndex = 7 - index / 8; // Adjusted for reversed numbering
 
 	return std::string(1, file[fileIndex]) + rank[rankIndex];
+}
+
+std::string moveToString(Move* move) {
+	std::string captureString = "";
+	if (move->capture != -52) {
+		captureString = " is capturing a piece";
+	}
+	return "move from: " + squareToString(move->src) +
+		" to: " + squareToString(move->dst) + " " +
+		specialToString(move->special) +
+		captureString + ".";
 }
 
 U64 bitmap_all_white_pawns(Board* bord) {
@@ -1611,6 +1622,48 @@ Square stringToSquare(std::string inp) {
 	return A8;
 }
 
+std::string specialToString(SPECIAL special) {
+	if (special == NOT_SPECIAL) {
+		return "";
+	}
+	else if (special == SPECIAL_WK_CASTLING) {
+		return "White is kingside casteling";
+	}
+	else if (special == SPECIAL_BK_CASTLING) {
+		return "Black is kingside casteling";
+	}
+	else if (special == SPECIAL_WQ_CASTLING) {
+		return "White is queenside casteling";
+	}
+	else if (special == SPECIAL_BQ_CASTLING) {
+		return "Black is queenside casteling";
+	}
+	else if (special == SPECIAL_PROMOTION_QUEEN) {
+		return "Promotes a pawn to a Queen";
+	}
+	else if (special == SPECIAL_PROMOTION_ROOK) {
+		return "Promotes a pawn to a Rook";
+	}
+	else if (special == SPECIAL_PROMOTION_BISHOP) {
+		return "Promotes a pawn to a Bishop";
+	}
+	else if (special == SPECIAL_PROMOTION_KNIGHT) {
+		return "Promotes a pawn to a Knight";
+	}
+	else if (special == SPECIAL_WPAWN_2SQUARES) {
+		return "Moves a White pawn 2 squares";
+	}
+	else if (special == SPECIAL_BPAWN_2SQUARES) {
+		return "Moves a black pawn 2 squares";
+	}
+	else if (special == SPECIAL_WEN_PASSANT) {
+		return "White captures en passent";
+	}
+	else if (special == SPECIAL_BEN_PASSANT) {
+		return "Black captures en passent";
+	}
+}
+
 void readInFen(Board* bord, std::string* fen) {
 	fen->erase(std::remove(fen->begin(), fen->end(), '/'), fen->end());
 	cout << *fen << endl;
@@ -1706,7 +1759,7 @@ void readInFen(Board* bord, std::string* fen) {
 
 // Function to make a move
 void makeMove(Board* bord, Move* move) {
-	lastCapturedPiece = NOPIECE;
+	//lastCapturedPiece = NOPIECE; //TODO needed if i make a popMove
 	// Update the pawns bitboard to reflect the move
 	U64 fromBit = ((1ULL << 63) >> move->src);
 	U64 toBit = ((1ULL << 63) >> move->dst);
@@ -1722,7 +1775,7 @@ void makeMove(Board* bord, Move* move) {
 		(move->special == SPECIAL_PROMOTION_ROOK)) {
 		if (((bord->white | bord->black) & toBit) != 0) {
 			//clear all bitboards on the to position
-			lastCapturedPiece = pieceAt(move->dst, bord);
+			//lastCapturedPiece = pieceAt(move->dst, bord); //TODO needed if i make a popMove
 			bord->rook &= ~toBit;
 			bord->knight &= ~toBit;
 			bord->bishop &= ~toBit;
