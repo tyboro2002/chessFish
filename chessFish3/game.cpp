@@ -1,4 +1,4 @@
-// chessFish3.cpp : Defines the entry point for the application.
+// game.cpp : Defines the entry point for the application.
 //
 
 #include "game.h"

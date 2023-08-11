@@ -1,0 +1,15 @@
+// engine.h : Include file for standard system include files,
+// or project specific include files.
+
+#pragma once
+
+#include <iostream>
+
+void king_danger_squares_test();
+void path_test();
+void checking_test();
+void move_test();
+void move_test_check();
+void randomMoveTest();
+void fen_test();
+void legalMoveTest();
