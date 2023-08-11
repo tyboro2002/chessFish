@@ -262,7 +262,7 @@ std::string moveToString(Move* move) {
 
 U64 bitmap_all_white_pawns(Board* bord) {
 	U64 wpawns = bord->pawn & bord->white; // all positions of white pawns
-	U64 doublePawns = (wpawns & twoRow); // all positions of white pawns able to move 2
+	U64 doublePawns = (wpawns & twoRow) & ~((bord->white | bord->black) >> 8); // all positions of white pawns able to move 2
 	U64 nonCaptures = (((doublePawns << 8) | (doublePawns << 16) | (wpawns << 8)) & (~(bord->white | bord->black))); // all non capturing moves a pawn can do
 	U64 captures = ((wpawns & (~border)) << 7 | (wpawns & (~border)) << 9 | (wpawns & H) << 9 | (wpawns & A) << 7); // all capturing moves a pawn can do
 	U64 enPassent = (~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))); // all squares that are able to be en passented
@@ -271,7 +271,7 @@ U64 bitmap_all_white_pawns(Board* bord) {
 
 U64 bitmap_all_black_pawns(Board* bord) {
 	U64 bpawns = bord->pawn & bord->black; // all positions of black pawns
-	U64 doublePawns = (bpawns & sevenRow); // all positions of black pawns able to move 2
+	U64 doublePawns = (bpawns & sevenRow) & ~((bord->white | bord->black) << 8); // all positions of black pawns able to move 2
 	U64 nonCaptures = (((doublePawns >> 8) | (doublePawns >> 16) | (bpawns >> 8)) & (~(bord->white | bord->black))); // all non capturing moves a pawn can do
 	U64 captures = ((bpawns & (~border)) >> 7 | (bpawns & (~border)) >> 9 | (bpawns & H) >> 7 | (bpawns & A) >> 9); // all capturing moves a pawn can do
 	U64 enPassent = (~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))); // all squares that are able to be en passented
@@ -372,7 +372,7 @@ U64 bitmap_white_rook(int position, Board* bord) {
 
 U64 bitmap_white_pawns(int position, Board* bord) {
 	U64 wpawns = ((1ULL << 63) >> position); // the square given
-	U64 doublePawns = (wpawns & twoRow); // all positions of white pawns able to move 2
+	U64 doublePawns = (wpawns & twoRow) & ~((bord->white|bord->black) >> 8); // all positions of white pawns able to move 2
 	U64 nonCaptures = (((doublePawns << 8) | (doublePawns << 16) | (wpawns << 8)) & (~(bord->white | bord->black))); // all non capturing moves a pawn can do
 	U64 captures = ((wpawns & (~border)) << 7 | (wpawns & (~border)) << 9 | (wpawns & H) << 9 | (wpawns & A) << 7); // all capturing moves a pawn can do
 	U64 enPassent = en_passent_target(bord); // all squares that are able to be en passented
@@ -380,7 +380,7 @@ U64 bitmap_white_pawns(int position, Board* bord) {
 }
 U64 bitmap_black_pawns(int position, Board* bord) {
 	U64 bpawns = ((1ULL << 63) >> position); // the square given
-	U64 doublePawns = (bpawns & sevenRow); // all positions of black pawns able to move 2
+	U64 doublePawns = (bpawns & sevenRow) & ~((bord->white | bord->black) << 8); // all positions of black pawns able to move 2
 	U64 nonCaptures = (((doublePawns >> 8) | (doublePawns >> 16) | (bpawns >> 8)) & (~(bord->white | bord->black))); // all non capturing moves a pawn can do
 	U64 captures = ((bpawns & (~border)) >> 7 | (bpawns & (~border)) >> 9 | (bpawns & H) >> 7 | (bpawns & A) >> 9); // all capturing moves a pawn can do
 	U64 enPassent = en_passent_target(bord); // all squares that are able to be en passented

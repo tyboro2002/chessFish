@@ -237,6 +237,9 @@ void runGame() {
 	Board bord;
 	Move move;
 	setup(&bord);
+	int duration;
+	cout << "how many moves max" << endl;
+	cin >> duration;
 	cout << "wich engine do you want to player A to be?" << endl;
 	printEngines();
 	int engineNumberA;
@@ -245,7 +248,8 @@ void runGame() {
 	printEngines();
 	int engineNumberB;
 	cin >> engineNumberB;
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < duration; i++) {
+		cout << "move: " << i << endl;
 		printBoard(&bord);
 		if (engineNumberA == 0) {
 			askForMove(&bord, &move);
