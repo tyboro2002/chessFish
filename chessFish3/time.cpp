@@ -49,3 +49,29 @@ void time_bitwise_code() {
 
 	std::cout << "Time taken: " << duration << " microseconds" << std::endl;
 }
+
+
+void time_minimax_code() {
+	Board bord;
+	Move move;
+	MOVELIST moveList;
+	// Clear move list
+	moveList.count = 0;   // set each field for each move
+	setup(&bord);
+
+	//timing code
+	// Get the starting timestamp
+	auto startTime = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < 1000000; ++i){
+		minimax_root(&bord, 10, false, &move, &moveList);
+	}
+
+	// Get the ending timestamp
+	auto endTime = std::chrono::high_resolution_clock::now();
+
+	// Calculate the duration in microseconds (change to other duration units as needed)
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+
+	std::cout << "Time taken: " << duration << " microseconds" << std::endl;
+}

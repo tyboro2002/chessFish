@@ -42,7 +42,7 @@ void runGame() {
 		}else if (engineNumberA == 1) {
 			makeRandomMove(&bord, &moveList);
 		}else if (engineNumberA == 2) {
-			makeMiniMaxMove(&bord, &moveList, 1, false);
+			makeMiniMaxMove(&bord, &moveList, 2, false);
 		}
         printBoard(&bord);
         GenLegalMoveList(&moveList, &bord);
@@ -59,7 +59,7 @@ void runGame() {
 			else if (engineNumberB == 1) {
 				makeRandomMove(&bord, &moveList);
 			}else if (engineNumberB == 2) {
-				makeMiniMaxMove(&bord, &moveList, 1, false);
+				makeMiniMaxMove(&bord, &moveList, 2, false);
 			}
             i++;
         }
@@ -78,6 +78,8 @@ int main()
 	//fen_test();
 	//legalMoveTest();
 	//randomMoveTest();
+	
+	//time_minimax_code();
 	runGame();
 	return 0;
 }

@@ -449,8 +449,9 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
 
     if (depth == 0) {
         //printBoard(bord);
-        //std::tuple<int, int> material_scores = evaluateBothSides(bord);
-        //cout << std::get<0>(material_scores) << "," << std::get<1>(material_scores) << endl;
+        //int ev = evaluate(bord);
+        ////std::tuple<int, int> material_scores = evaluateBothSides(bord);
+        ////cout << std::get<0>(material_scores) << "," << std::get<1>(material_scores) << endl;
         //cout << "score: " << ev << endl;
         return evaluate(bord);
     }
@@ -468,7 +469,7 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
             Board boardCopy;
             copyBoard(bord, &boardCopy);
             makeMove(&boardCopy, &move);
-            double curr_move = minimax(bord, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter);//, transpositionTable);
+            double curr_move = minimax(&boardCopy, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter);//, transpositionTable);
 
             // Each ply after a checkmate is slower, so they get ranked slightly less
             // We want the fastest mate!
@@ -500,7 +501,7 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
             Board boardCopy;
             copyBoard(bord, &boardCopy);
             makeMove(&boardCopy, &move);
-            double curr_move = minimax(bord, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter);//, transpositionTable);
+            double curr_move = minimax(&boardCopy, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter);//, transpositionTable);
             // Each ply after a checkmate is slower, so they get ranked slightly less
             // We want the fastest mate!
             if (curr_move > MATE_THRESHOLD) {
