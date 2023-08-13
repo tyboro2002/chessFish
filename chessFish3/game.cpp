@@ -40,7 +40,7 @@ constexpr U64 bqcastle = 0b01110000000000000000000000000000000000000000000000000
 #define pop_bit(bitboard, index) (get_bit(bitboard, index) ? bitboard ^= (1ULL << index) : 0)
 
 
-Pieces lastCapturedPiece = NOPIECE;
+//Pieces lastCapturedPiece = NOPIECE;
 
 // Function to copy values from bordIn to bordOut
 void copyBoard(const Board* bordIn, Board* bordOut) {
@@ -257,7 +257,7 @@ std::string moveToString(Move* move) {
 	return "move from: " + squareToString(move->src) +
 		" to: " + squareToString(move->dst) + " " +
 		specialToString(move->special) +
-		captureString + ".";
+		captureString;
 }
 
 U64 bitmap_all_white_pawns(Board* bord) {
@@ -1194,9 +1194,37 @@ void GenMoveList(MOVELIST* list, Board* bord) {
 	}
 }
 
+void addLegalMoveList(MOVELIST* list, Board* bord) {
+	int i, j;
+	bool okay;
+	MOVELIST list2;
+	list2.count = 0;
+
+	// Generate all moves, including illegal (e.g. put king in check) moves
+	if (white_plays(bord)) {
+		white_moves(&list2, bord);
+	}
+	else {
+		black_moves(&list2, bord);
+	}
+	Board bordCopy;
+	// Loop copying the proven good ones
+	for (i = j = 0; i < list2.count; i++)
+	{
+		copyBoard(bord, &bordCopy);
+		makeMove(&bordCopy, &list2.moves[i]);
+		okay = EvaluateQuick(bord);
+		//popMove(bord, &list2.moves[i]);
+		if (okay)
+			list->moves[j++] = list2.moves[i];
+	}
+	list->count = j;
+}
+
 void GenLegalMoveList(MOVELIST* list, Board* bord) {
 	int i, j;
 	bool okay;
+	list->count = 0;
 	MOVELIST list2;
 	list2.count = 0;
 
@@ -1409,7 +1437,7 @@ Pieces pieceAt(int square, Board* bord) {
 			return WPAWN;
 		}
 	}
-	else if (bord->white & sq) {
+	else if (bord->black & sq) {
 		if (bord->rook & sq) {
 			return BROOK;
 		}
@@ -1973,7 +2001,7 @@ void makeMove(Board* bord, Move* move) {
 	bord->extra ^= (1ULL << 18); // swap playing player
 }
 
-
+/*
 // Function to remove a move
 void popMove(Board* bord, Move* move) {
 	// Update the pawns bitboard to reflect the move
@@ -2002,6 +2030,7 @@ void popMove(Board* bord, Move* move) {
 
 
 		if ((bord->rook & toBit) != 0) {
+		*/
 			/* //TODO
 			if ((((1ULL << 63) >> (A8)) & fromBit) != 0) {
 				bord->extra |= (1ULL << 14); // re add white kingside casteling ability
@@ -2016,6 +2045,7 @@ void popMove(Board* bord, Move* move) {
 				bord->extra |= (1ULL << 17); // re add black queenside casteling ability
 			}
 			*/
+/*
 			bord->rook |= fromBit; // set the source square
 			bord->rook ^= toBit;   // clear the destination square
 		}
@@ -2032,6 +2062,7 @@ void popMove(Board* bord, Move* move) {
 			bord->queen ^= toBit;   // Set the destination square
 		}
 		else if ((bord->king & toBit) != 0) {
+		*/
 			/* //TODO
 			if ((bord->white & fromBit) != 0) {
 				bord->extra &= ~((((1ULL << 2) - 1) << 16));
@@ -2040,6 +2071,7 @@ void popMove(Board* bord, Move* move) {
 				bord->extra &= ~((((1ULL << 2) - 1) << 14));
 			}
 			*/
+/*
 			bord->king |= fromBit; // Clear the source square
 			bord->king ^= toBit;   // Set the destination square
 		}
@@ -2057,6 +2089,7 @@ void popMove(Board* bord, Move* move) {
 		else if (move->special == SPECIAL_BPAWN_2SQUARES) {
 			bord->extra &= ~((((1ULL << 7) - 1) << 7));
 		}
+		*/
 		/* //TODO
 		else if (move->special == SPECIAL_WEN_PASSANT) {
 			U64 enPassentBit = ((1ULL << 63) >> (move->dst + 8));
@@ -2139,6 +2172,7 @@ void popMove(Board* bord, Move* move) {
 			bord->black |= newKingSQ;
 		}
 		*/
+/*
 		else if (move->special == SPECIAL_PROMOTION_BISHOP) {
 			U64 promotionPawn = bord->bishop & ((1ULL << move->dst));
 			bord->pawn |= ((1ULL << move->src));
@@ -2166,3 +2200,4 @@ void popMove(Board* bord, Move* move) {
 		addPiece(bord, lastCapturedPiece, move->dst);
 	}
 }
+*/

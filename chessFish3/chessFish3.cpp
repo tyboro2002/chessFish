@@ -12,6 +12,7 @@ using namespace std;
 void runGame() {
 	Board bord;
 	Move move;
+    MOVELIST moveList;
 	setup(&bord);
 	int duration;
 	cout << "how many moves do you want to play max?" << endl;
@@ -25,34 +26,43 @@ void runGame() {
 	int engineNumberB;
 	cin >> engineNumberB;
 	int i = 0;
-	while (i < duration) {
+    bool finished = false;
+	while (i < duration & !finished) {
 		cout << "move: " << i+1<< endl;
 		printBoard(&bord);
+        GenLegalMoveList(&moveList, &bord);
+        if (moveList.count == 0) {
+            cout << "white has no more legal moves" << endl;
+            finished = true;
+        }
 		if (engineNumberA == 0) {
-			askForMove(&bord, &move);
+			askForMove(&bord, &move, &moveList);
 			cout << "You selected: " << moveToString(&move) << endl;
 			makeMove(&bord, &move);
 		}else if (engineNumberA == 1) {
-			MOVELIST moveList;
-			// Clear move list
-			moveList.count = 0;   // set each field for each move
-			GenLegalMoveList(&moveList, &bord);
 			makeRandomMove(&bord, &moveList);
+		}else if (engineNumberA == 2) {
+			makeMiniMaxMove(&bord, &moveList, 1, false);
 		}
-		printBoard(&bord);
-		if (engineNumberB == 0) {
-			askForMove(&bord, &move);
-			cout << "You selected: " << moveToString(&move) << endl;
-			makeMove(&bord, &move);
-		}
-		else if (engineNumberB == 1) {
-			MOVELIST moveList;
-			// Clear move list
-			moveList.count = 0;   // set each field for each move
-			GenLegalMoveList(&moveList, &bord);
-			makeRandomMove(&bord, &moveList);
-		}
-		i++;
+        printBoard(&bord);
+        GenLegalMoveList(&moveList, &bord);
+        if (moveList.count == 0) {
+            cout << "black has no more legal moves" << endl;
+            finished = true;
+        }
+        if (!finished) {
+            if (engineNumberB == 0) {
+                askForMove(&bord, &move, &moveList);
+                cout << "You selected: " << moveToString(&move) << endl;
+                makeMove(&bord, &move);
+            }
+			else if (engineNumberB == 1) {
+				makeRandomMove(&bord, &moveList);
+			}else if (engineNumberB == 2) {
+				makeMiniMaxMove(&bord, &moveList, 1, false);
+			}
+            i++;
+        }
 	}
 }
 

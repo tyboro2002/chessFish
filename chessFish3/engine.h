@@ -8,7 +8,8 @@
 
 // TODO: Reference additional headers your program requires here.
 
-void askForMove(Board* bord, Move* move);
+void askForMove(Board* bord, Move* move, MOVELIST* moveList);
 void printEngines();
 
 void makeRandomMove(Board* bord, MOVELIST* moveList);
+void makeMiniMaxMove(Board* bord, MOVELIST* moveList, int depth, bool maximize);

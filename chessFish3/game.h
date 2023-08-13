@@ -137,6 +137,9 @@ struct MOVELIST{
 };
 
 int countSetBits(U64 number);
+int getFirst1BitSquare(U64 number);
+
+Pieces pieceAt(int square, Board* bord);
 
 void setup(Board* bord);
 void setupEmpty(Board* bord);
@@ -184,9 +187,9 @@ U64 bitmap_black_knight(int square, Board* bord);
 U64 all_white_attacks(Board* bord, int diepte);
 U64 all_black_attacks(Board* bord, int diepte);
 
-//void GenLegalMoveList(MOVELIST* list, Board* bord);
 void GenMoveList(MOVELIST* list, Board* bord);
 void GenLegalMoveList(MOVELIST* list, Board* bord);
+void addLegalMoveList(MOVELIST* list, Board* bord);
 
 U64 squaresBetweenBitmap(int startSquare, int endSquare);
 U64 white_checking_bitmap(Board* bord);
