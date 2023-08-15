@@ -1,6 +1,7 @@
 #include "tests.h"
 #include "game.h"
 #include "engine.h"
+#include <bitset>
 
 using namespace std;
 
@@ -120,6 +121,7 @@ void legalMoveTest() {
 	// Clear move list
 	moveList.count = 0;   // set each field for each move
 
+	/*
 	setupEmpty(&bord);
 	std::string fen = "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2";
 	readInFen(&bord, &fen);
@@ -132,5 +134,129 @@ void legalMoveTest() {
 	readInFen(&bord, &fen);
 
 	GenLegalMoveList(&moveList, &bord);
+
+	*/
+	setupEmpty(&bord);
+	std::string fen = "r1bq2r1/b4pk1/p1pp1p2/1p2pPQ1/1P2P1PB/3P4/1PP3P1/R3K2R b - - 0 1";
+	readInFen(&bord, &fen);
+	GenLegalMoveList(&moveList, &bord);
 	cout << endl;
+}
+
+/*
+* further tests are automatic tests
+*/
+bool mateInOneTest() {
+	Board bord;
+	Move move;
+	Move moveOut;
+	setupEmpty(&bord);
+	std::string fen = "4kb1r/p2ppppp/8/8/8/8/P1PPPPPP/RQ2KB1R w - - 0 1";
+	readInFen(&bord, &fen);
+
+	MOVELIST moveList;
+	// Clear move list
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, &bord);
+
+	minimax_root(&bord, 1, true, &moveOut, &moveList);
+	move.src = B1;
+	move.dst = B8;
+	move.capture = -52;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &moveOut);
+	//printBoard(&bord);
+	return move == moveOut;
+}
+
+bool mateInTwoTest() {
+	Board bord;
+	Move move;
+	Move moveOut;
+	setupEmpty(&bord);
+	std::string fen = "r1bq2r1/b4pk1/p1pp1p2/1p2pP2/1P2P1PB/3P4/1PP3P1/R1Q1K2R w - - 0 1";
+	readInFen(&bord, &fen);
+	//printBoard(&bord);
+	int depth = 3; // set the depth for the minimax
+	MOVELIST moveList;
+	// Clear move list
+
+	//white move
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, &bord);
+	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	move.src = C1;
+	move.dst = H6;
+	move.capture = -52;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &moveOut);
+	//printBoard(&bord);
+	if (!(move == moveOut)) {
+		return false;
+	}
+
+	//black move
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, &bord);
+	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	move.src = G7;
+	move.dst = H6;
+	move.capture = H6;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &moveOut);
+	//printBoard(&bord);
+	if (!(move == moveOut)) {
+		return false;
+	}
+
+
+	//white move
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, &bord);
+	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	move.src = H4;
+	move.dst = F6;
+	move.capture = F6;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &moveOut);
+	//printBoard(&bord);
+	if (!(move == moveOut)) {
+		return false;
+	}
+	return move == moveOut;
+}
+
+void runAutomatedTests() {
+
+	cout << "mate in one test" << endl;
+	if (mateInOneTest()) {
+		cout << "SUCEED" << endl;
+	}
+	else {
+		cout << "FAILED" << endl;
+	}
+	
+	cout << "mate in two test" << endl;
+	if (mateInTwoTest()) {
+		cout << "SUCEED" << endl;
+	}
+	else {
+		cout << "FAILED" << endl;
+	}
+}
+
+void runAutomatedTestsSilent() {
+	if (!mateInOneTest()) cout << "mate in one test FAILED" << endl;
+	if (!mateInTwoTest()) cout << "mate in two test FAILED" << endl;
+}
+
+void kingMovesTest() {
+	Board bord;
+	for (int i = 0; i < 64; i++) {
+		setupEmpty(&bord);
+		addPiece(&bord, WKING, (Square)i);
+		printBoard(&bord);
+		printBitBoard(bitmap_white_king(i, &bord),"");
+		cout << std::bitset<64>(bitmap_white_king(i,&bord)) << endl;
+	}
 }

@@ -190,6 +190,8 @@ U64 all_black_attacks(Board* bord, int diepte);
 void GenMoveList(MOVELIST* list, Board* bord);
 void GenLegalMoveList(MOVELIST* list, Board* bord);
 void addLegalMoveList(MOVELIST* list, Board* bord);
+bool OpponentHasMoves(Board* bord);
+bool weHaveMoves(Board* bord);
 
 U64 squaresBetweenBitmap(int startSquare, int endSquare);
 U64 white_checking_bitmap(Board* bord);

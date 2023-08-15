@@ -390,6 +390,7 @@ double move_value(Board* bord, Move* mv, bool endgame) {
         current_move_value = -current_move_value;
     }
     //cout << current_move_value << endl;
+    //TODO check if a check if oponent has move is faster and better
     return current_move_value;
 }
 Move* reverseArray(Move* arr, const std::size_t size) { //TODO check
@@ -461,6 +462,7 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
         MOVELIST moveList;
         moveList.count = 0; //TODO check if needed
         get_orderd_moves(bord, &moveList);
+
         int size = moveList.count;
         Move* moves = moveList.moves;
         for (int i = 0; i < size; i++) {
@@ -469,6 +471,9 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
             Board boardCopy;
             copyBoard(bord, &boardCopy);
             makeMove(&boardCopy, &move);
+            if (!weHaveMoves(&boardCopy)) {
+                return INFINITY;
+            }
             double curr_move = minimax(&boardCopy, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter);//, transpositionTable);
 
             // Each ply after a checkmate is slower, so they get ranked slightly less
@@ -501,6 +506,9 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
             Board boardCopy;
             copyBoard(bord, &boardCopy);
             makeMove(&boardCopy, &move);
+            if (!weHaveMoves(&boardCopy)) {
+                return -INFINITY;
+            }
             double curr_move = minimax(&boardCopy, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter);//, transpositionTable);
             // Each ply after a checkmate is slower, so they get ranked slightly less
             // We want the fastest mate!
@@ -534,7 +542,6 @@ void minimax_root(Board* bord, int depth, bool maximize, Move* moveOut, MOVELIST
 
     double best_move = maximize ? -INFINITY : INFINITY;
     orderMoves(bord, moveList);
-    //get_orderd_moves(bord,&moveList);
     int size = moveList->count;
     Move* moves = moveList->moves;
     Move best_move_found = moves[0];
@@ -545,12 +552,19 @@ void minimax_root(Board* bord, int depth, bool maximize, Move* moveOut, MOVELIST
         Board boardCopy;
         copyBoard(bord, &boardCopy);
         makeMove(&boardCopy, &move);
+        if (!weHaveMoves(&boardCopy)) {
+            moveOut->src = move.src;
+            moveOut->dst = move.dst;
+            moveOut->capture = move.capture;
+            moveOut->special = move.special;
+            return;
+        }
         DRAWTYPE drawtype;
         double value = 0.0;
         int branchCount = 0;
         int* branchCounter = &branchCount;
         //if (!cr->IsDraw(cr->WhiteToPlay(), drawtype)) {
-        value = minimax(&boardCopy, -INFINITY, INFINITY, depth - 1, !maximize, white_plays((&boardCopy)), branchCounter);//, transpositionTable);
+        value = minimax(&boardCopy, -INFINITY, INFINITY, depth - 1, !maximize, !white_plays((&boardCopy)), branchCounter);//, transpositionTable);
         //}
         //cout << "move: " << move.NaturalOut(cr) << " " << branchCount << endl;
         if (maximize && value > best_move) {
@@ -561,6 +575,7 @@ void minimax_root(Board* bord, int depth, bool maximize, Move* moveOut, MOVELIST
             best_move = value;
             best_move_found = move;
         }
+        //cout << "move: " << moveToString(&move) << " has value: " << best_move << endl;
     }
     //transpositionTable->store(key, best_move, depth, &best_move_found);
     moveOut->src = best_move_found.src;

@@ -13,7 +13,10 @@ void runGame() {
 	Board bord;
 	Move move;
     MOVELIST moveList;
-	setup(&bord);
+	setupEmpty(&bord);
+	std::string fen = "4kb1r/p2ppppp/8/8/8/8/P1PPPPPP/RQ2KB1R w - - 0 1";
+	readInFen(&bord, &fen);
+	printBoard(&bord);
 	int duration;
 	cout << "how many moves do you want to play max?" << endl;
 	cin >> duration;
@@ -26,6 +29,7 @@ void runGame() {
 	int engineNumberB;
 	cin >> engineNumberB;
 	int i = 0;
+	int depth = 2;
     bool finished = false;
 	while (i < duration & !finished) {
 		cout << "move: " << i+1<< endl;
@@ -42,7 +46,7 @@ void runGame() {
 		}else if (engineNumberA == 1) {
 			makeRandomMove(&bord, &moveList);
 		}else if (engineNumberA == 2) {
-			makeMiniMaxMove(&bord, &moveList, 2, false);
+			makeMiniMaxMove(&bord, &moveList, depth, true);
 		}
         printBoard(&bord);
         GenLegalMoveList(&moveList, &bord);
@@ -59,7 +63,7 @@ void runGame() {
 			else if (engineNumberB == 1) {
 				makeRandomMove(&bord, &moveList);
 			}else if (engineNumberB == 2) {
-				makeMiniMaxMove(&bord, &moveList, 2, false);
+				makeMiniMaxMove(&bord, &moveList, depth, true);
 			}
             i++;
         }
@@ -80,6 +84,11 @@ int main()
 	//randomMoveTest();
 	
 	//time_minimax_code();
-	runGame();
+	time_mate_test_code();
+	//runAutomatedTests();
+	//runGame();
+
+
+	//kingMovesTest();
 	return 0;
 }

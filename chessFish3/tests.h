@@ -13,3 +13,14 @@ void move_test_check();
 void randomMoveTest();
 void fen_test();
 void legalMoveTest();
+
+/*
+* automatic tests
+*/
+void runAutomatedTests();
+void runAutomatedTestsSilent();
+bool mateInOneTest();
+bool mateInTwoTest();
+
+
+void kingMovesTest();
