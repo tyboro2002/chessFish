@@ -21,6 +21,7 @@ void runAutomatedTests();
 void runAutomatedTestsSilent();
 bool mateInOneTest();
 bool mateInTwoTest();
+bool mateInThreeTest();
 
-
-void kingMovesTest();
+void kingMovesGenerator();
+void knightMovesGenerator();

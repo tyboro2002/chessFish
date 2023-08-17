@@ -226,19 +226,112 @@ bool mateInTwoTest() {
 	return move == moveOut;
 }
 
-void runAutomatedTests() {
+bool mateInThreeTest() {
+	Board bord;
+	Move move;
+	Move moveOut;
+	setupEmpty(&bord);
+	std::string fen = "r3k2r/ppp2Npp/1b5n/4p2b/2B1P2q/BQP2P2/P5PP/RN5K w kq - 1 0";
+	readInFen(&bord, &fen);
+	//printBoard(&bord);
+	int depth = 5; // set the depth for the minimax
+	MOVELIST moveList;
+	// Clear move list
 
+	//white move
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, &bord);
+	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	move.src = C4;
+	move.dst = B5;
+	move.capture = -52;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &moveOut);
+	//printBoard(&bord);
+	if (!(move == moveOut)) {
+		return false;
+	}
+
+	//black move
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, &bord);
+	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	move.src = C7;
+	move.dst = C6;
+	move.capture = -52;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &moveOut);
+	//printBoard(&bord);
+	if (!(move == moveOut)) {
+		return false;
+	}
+
+
+	//white move
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, &bord);
+	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	move.src = B3;
+	move.dst = E6;
+	move.capture = -52;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &moveOut);
+	//printBoard(&bord);
+	if (!(move == moveOut)) {
+		return false;
+	}
+
+	//black move
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, &bord);
+	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	move.src = H4;
+	move.dst = E7;
+	move.capture = -52;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &moveOut);
+	//printBoard(&bord);
+	if (!(move == moveOut)) {
+		return false;
+	}
+
+	//white move
+	moveList.count = 0;   // set each field for each move
+	GenLegalMoveList(&moveList, &bord);
+	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	move.src = E6;
+	move.dst = E7;
+	move.capture = E7;
+	move.special = NOT_SPECIAL;
+	makeMove(&bord, &moveOut);
+	//printBoard(&bord);
+	if (!(move == moveOut)) {
+		return false;
+	}
+	return move == moveOut;
+}
+
+void runAutomatedTests() {
+	// run mate in one test
 	cout << "mate in one test" << endl;
 	if (mateInOneTest()) {
-		cout << "SUCEED" << endl;
+		cout << "SUCCEED" << endl;
 	}
 	else {
 		cout << "FAILED" << endl;
 	}
-	
+	// run mate in two test
 	cout << "mate in two test" << endl;
 	if (mateInTwoTest()) {
-		cout << "SUCEED" << endl;
+		cout << "SUCCEED" << endl;
+	}
+	else {
+		cout << "FAILED" << endl;
+	}
+	// run mate in three test
+	cout << "mate in three test" << endl;
+	if (mateInThreeTest()) {
+		cout << "SUCCEED" << endl;
 	}
 	else {
 		cout << "FAILED" << endl;
@@ -246,11 +339,12 @@ void runAutomatedTests() {
 }
 
 void runAutomatedTestsSilent() {
-	if (!mateInOneTest()) cout << "mate in one test FAILED" << endl;
-	if (!mateInTwoTest()) cout << "mate in two test FAILED" << endl;
+	//if (!mateInOneTest()) cout << "mate in one test FAILED" << endl;
+	//if (!mateInTwoTest()) cout << "mate in two test FAILED" << endl;
+	if (!mateInThreeTest()) cout << "mate in three test FAILED" << endl;
 }
 
-void kingMovesTest() {
+void kingMovesGenerator() {
 	Board bord;
 	for (int i = 0; i < 64; i++) {
 		setupEmpty(&bord);
@@ -258,5 +352,16 @@ void kingMovesTest() {
 		printBoard(&bord);
 		printBitBoard(bitmap_white_king(i, &bord),"");
 		cout << std::bitset<64>(bitmap_white_king(i,&bord)) << endl;
+	}
+}
+
+void knightMovesGenerator() {
+	Board bord;
+	for (int i = 0; i < 64; i++) {
+		setupEmpty(&bord);
+		addPiece(&bord, WKNIGHT, (Square)i);
+		//printBoard(&bord);
+		//printBitBoard(bitmap_white_knight(i, &bord), "");
+		cout << std::bitset<64>(bitmap_white_knight(i, &bord)) << endl;
 	}
 }

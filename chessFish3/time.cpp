@@ -14,14 +14,15 @@ void time_code() {
 	moveList.count = 0;   // set each field for each move
 
 	setup(&bord);
-	printBoard(&bord);
+	//printBoard(&bord);
 	//timing code
 	// Get the starting timestamp
 	auto startTime = std::chrono::high_resolution_clock::now();
 
 	for (int i = 0; i < 1000000; ++i) {
 		//bitmap_white_pawns(bord) | bitmap_black_pawns(bord) | bitmap_black_king(bord) | bitmap_white_king(bord);
-		all_white_attacks(&bord, 1) | all_black_attacks(&bord, 1);
+		//all_white_attacks(&bord, 1) | all_black_attacks(&bord, 1);
+		//bitmap_white_knight(E5, &bord);
 	}
 
 	// Get the ending timestamp
@@ -30,6 +31,31 @@ void time_code() {
 	// Calculate the duration in microseconds (change to other duration units as needed)
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
 
+	cout << "first aproach needed:" << endl;
+	std::cout << "Time taken: " << duration << " microseconds" << std::endl;
+
+
+	moveList.count = 0;   // set each field for each move
+
+	setup(&bord);
+	//printBoard(&bord);
+	//timing code
+	// Get the starting timestamp
+	startTime = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < 1000000; ++i) {
+		//bitmap_white_pawns(bord) | bitmap_black_pawns(bord) | bitmap_black_king(bord) | bitmap_white_king(bord);
+		//all_white_attacks(&bord, 1) | all_black_attacks(&bord, 1);
+		//bitmap_white_knight_speed_test(E5, &bord);
+	}
+
+	// Get the ending timestamp
+	endTime = std::chrono::high_resolution_clock::now();
+
+	// Calculate the duration in microseconds (change to other duration units as needed)
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
+
+	cout << "second aproach needed:" << endl;
 	std::cout << "Time taken: " << duration << " microseconds" << std::endl;
 }
 

@@ -89,6 +89,7 @@ int main()
 	//runGame();
 
 
-	//kingMovesTest();
+	//kingMovesGenerator();
+	//knightMovesGenerator();
 	return 0;
 }
