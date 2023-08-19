@@ -967,7 +967,9 @@ U64 black_checking_bitmap(Board* bord) {
 	return att_path | checks;
 }
 
-
+/*
+* bitmap of al squares reachable by white pieces
+*/
 U64 all_white_attacks(Board* bord) {
 	U64 wrook = bord->white & bord->rook;
 	U64 wknight = bord->white & bord->knight;
@@ -1005,6 +1007,9 @@ U64 all_white_attacks(Board* bord) {
 	return attacks;// &white_checking_bitmap(bord);
 }
 
+/*
+* bitmap of al squares reachable by black pieces
+*/
 U64 all_black_attacks(Board* bord) {
 	U64 brook = bord->black & bord->rook;
 	U64 bknight = bord->black & bord->knight;
