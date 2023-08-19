@@ -91,8 +91,8 @@ void time_minimax_code() {
 	// Get the starting timestamp
 	auto startTime = std::chrono::high_resolution_clock::now();
 
-	for (int i = 0; i < 1000000; ++i){
-		minimax_root(&bord, 10, false, &move, &moveList, &transpositionTable);
+	for (int i = 0; i < 1; ++i){
+		minimax_root(&bord, 1000, false, &move, &moveList, &transpositionTable);
 	}
 
 	// Get the ending timestamp

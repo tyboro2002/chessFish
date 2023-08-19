@@ -13,6 +13,7 @@ void printEngines();
 
 void makeRandomMove(Board* bord, MOVELIST* moveList);
 void makeMiniMaxMove(Board* bord, MOVELIST* moveList, int depth, bool maximize, TranspositionTable* transpositionTable);
+void makeMiniMaxOptimizedMove(Board* bord, MOVELIST* moveList, int depth, bool maximize, TranspositionTable* transpositionTable);
 /*
 * only for testing
 */

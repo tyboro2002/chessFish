@@ -1067,6 +1067,8 @@ void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 		}
 		if (((1ULL << 63) >> m->dst) & bord->black) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1093,6 +1095,8 @@ void black_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 		}
 		if (((1ULL << 63) >> m->dst) & bord->white) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1110,6 +1114,8 @@ void white_rook_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->special = NOT_SPECIAL;
 		if (((1ULL << 63) >> m->dst) & bord->black) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1127,6 +1133,8 @@ void black_rook_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->special = NOT_SPECIAL;
 		if (((1ULL << 63) >> m->dst) & bord->white) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1144,6 +1152,8 @@ void white_knight_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->special = NOT_SPECIAL;
 		if (((1ULL << 63) >> m->dst) & bord->black) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1161,6 +1171,8 @@ void black_knight_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->special = NOT_SPECIAL;
 		if (((1ULL << 63) >> m->dst) & bord->white) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1178,6 +1190,8 @@ void white_bishop_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->special = NOT_SPECIAL;
 		if (((1ULL << 63) >> m->dst) & bord->black) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1195,6 +1209,8 @@ void black_bishop_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->special = NOT_SPECIAL;
 		if (((1ULL << 63) >> m->dst) & bord->white) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1212,6 +1228,8 @@ void white_queen_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->special = NOT_SPECIAL;
 		if (((1ULL << 63) >> m->dst) & bord->black) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1229,6 +1247,8 @@ void black_queen_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->special = NOT_SPECIAL;
 		if (((1ULL << 63) >> m->dst) & bord->white) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1253,6 +1273,8 @@ void white_king_moves(int position, MOVELIST* movelist, Board* bord) {
 		}
 		if (((1ULL << 63) >> m->dst) & bord->black) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1278,6 +1300,8 @@ void black_king_moves(int position, MOVELIST* movelist, Board* bord) {
 		}
 		if (((1ULL << 63) >> m->dst) & bord->white) {
 			m->capture = m->dst;
+		}else {
+			m->capture = -52;
 		}
 		m++;
 		movelist->count++;
@@ -1379,6 +1403,16 @@ void GenMoveList(MOVELIST* list, Board* bord) {
 	}
 }
 
+bool EvaluateQuick(Board* bord) {
+	if ((bord->extra &= (1ULL << 18)) == 0) {
+		return (((bord->king & bord->white) & all_black_attacks(bord))) == 0;
+	}
+	else {
+		return (((bord->king & bord->black) & all_white_attacks(bord))) == 0;
+	}
+	//return OpponentHasMoves(bord);
+}
+
 void addLegalMoveList(MOVELIST* list, Board* bord) {
 	int i, j;
 	bool okay;
@@ -1398,7 +1432,7 @@ void addLegalMoveList(MOVELIST* list, Board* bord) {
 	{
 		copyBoard(bord, &bordCopy);
 		makeMove(&bordCopy, &list2.moves[i]);
-		okay = !inCheck(bord);
+		okay = EvaluateQuick(bord);
 		//popMove(bord, &list2.moves[i]);
 		if (okay)
 			list->moves[j++] = list2.moves[i];
@@ -1426,7 +1460,7 @@ void GenLegalMoveList(MOVELIST* list, Board* bord) {
 	{
 		copyBoard(bord, &bordCopy);
 		makeMove(&bordCopy, &list2.moves[i]);
-		okay = !inCheck(&bordCopy);
+		okay = EvaluateQuick(&bordCopy);
 		//popMove(bord, &list2.moves[i]);
 		if (okay)
 			list->moves[j++] = list2.moves[i];
@@ -1456,7 +1490,7 @@ bool OpponentHasMoves(Board* bord) {
 	{
 		copyBoard(bord, &bordCopy);
 		makeMove(&bordCopy, &list2.moves[i]);
-		okay = !inCheck(&bordCopy);
+		okay = EvaluateQuick(&bordCopy);
 		if (okay) j++;
 	}
 	return j > 0;
@@ -1484,7 +1518,7 @@ bool weHaveMoves(Board* bord) {
 	{
 		copyBoard(bord, &bordCopy);
 		makeMove(&bordCopy, &list2.moves[i]);
-		okay = !inCheck(&bordCopy);
+		okay = EvaluateQuick(&bordCopy);
 		if (okay) j++;
 	}
 	return j > 0;

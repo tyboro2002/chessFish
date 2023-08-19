@@ -400,7 +400,6 @@ bool runAutomatedTests() {
 		cout << "FAILED" << endl;
 		return false;
 	}
-	/*
 	// run mate in one test
 	cout << "mate in one test" << endl;
 	if (mateInOneTest()) {
@@ -428,7 +427,6 @@ bool runAutomatedTests() {
 		cout << "FAILED" << endl;
 		return false;
 	}
-	*/
 	return true;
 }
 

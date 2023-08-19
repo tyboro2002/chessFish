@@ -6,6 +6,7 @@
 #include "engine.h"
 #include "tests.h"
 #include "time.h"
+#include <limits>
 
 using namespace std;
 
@@ -22,6 +23,11 @@ void runGame() {
 	int duration;
 	cout << "how many moves do you want to play max?" << endl;
 	cin >> duration;
+	cout << duration << endl;
+	if (duration == -1) {
+		duration = std::numeric_limits<int>::max();
+	}
+	cout << duration << endl;
 	cout << "wich engine do you want to player A to be?" << endl;
 	printEngines();
 	int engineNumberA;
@@ -31,7 +37,14 @@ void runGame() {
 	int engineNumberB;
 	cin >> engineNumberB;
 	int i = 0;
-	int depth = 5;
+	int depth;
+	if (engineNumberA == 2 || engineNumberB == 2) {
+		cout << "what depth do you want" << endl;
+		cin >> depth;
+	}
+	else {
+		depth = 0;
+	}
     bool finished = false;
 	while (i < duration & !finished) {
 		cout << "move: " << i+1<< endl;
@@ -49,6 +62,8 @@ void runGame() {
 			makeRandomMove(&bord, &moveList);
 		}else if (engineNumberA == 2) {
 			makeMiniMaxMove(&bord, &moveList, depth, true, &transpositionTable);
+		}else if (engineNumberA == 3) {
+			makeMiniMaxOptimizedMove(&bord, &moveList, depth, true, &transpositionTable);
 		}
         printBoard(&bord);
         GenLegalMoveList(&moveList, &bord);
@@ -66,6 +81,8 @@ void runGame() {
 				makeRandomMove(&bord, &moveList);
 			}else if (engineNumberB == 2) {
 				makeMiniMaxMove(&bord, &moveList, depth, true, &transpositionTable);
+			}else if (engineNumberB == 3) {
+				makeMiniMaxOptimizedMove(&bord, &moveList, depth, true, &transpositionTable);
 			}
             i++;
         }
@@ -88,8 +105,8 @@ int main()
 	
 	//time_minimax_code();
 	//time_mate_test_code();
-	runAutomatedTests();
-	//runGame();
+	//runAutomatedTests();
+	runGame();
 
 
 	//kingMovesGenerator();

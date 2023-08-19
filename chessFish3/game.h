@@ -198,6 +198,48 @@ private:
 	std::unordered_map<Board, TranspositionTableEntry> table;
 };
 
+struct PositionRecord {
+	int occurrences;
+	// Add any other information you want to track per position
+	// For example, moves or other relevant data
+};
+
+class PositionTracker {
+public:
+	//PositionTracker() {} //constructor
+
+	void addPosition(const Board* position) {
+		size_t positionHash = std::hash<Board>{}(*position);
+		positionRecords[positionHash].occurrences++;
+		// You can also add additional data to the position record if needed
+	}
+
+	void removePosition(const Board* position) {
+		size_t positionHash = std::hash<Board>{}(*position);
+		auto it = positionRecords.find(positionHash);
+		if (it != positionRecords.end()) {
+			if (it->second.occurrences > 1) {
+				it->second.occurrences--;
+			}
+			else {
+				positionRecords.erase(it);
+			}
+		}
+	}
+
+	int getPositionOccurrences(const Board* position) const {
+		size_t positionHash = std::hash<Board>{}(*position);
+		auto it = positionRecords.find(positionHash);
+		if (it != positionRecords.end()) {
+			return it->second.occurrences;
+		}
+		return 0;
+	}
+
+private:
+	std::unordered_map<size_t, PositionRecord> positionRecords;
+};
+
 int countSetBits(U64 number);
 int getFirst1BitSquare(U64 number);
 int findMoveIndex(MOVELIST* moveList, Move* targetMove);
