@@ -82,6 +82,7 @@ void time_minimax_code() {
 	Board bord;
 	Move move;
 	MOVELIST moveList;
+	TranspositionTable transpositionTable;
 	// Clear move list
 	moveList.count = 0;   // set each field for each move
 	setup(&bord);
@@ -91,7 +92,7 @@ void time_minimax_code() {
 	auto startTime = std::chrono::high_resolution_clock::now();
 
 	for (int i = 0; i < 1000000; ++i){
-		minimax_root(&bord, 10, false, &move, &moveList);
+		minimax_root(&bord, 10, false, &move, &moveList, &transpositionTable);
 	}
 
 	// Get the ending timestamp

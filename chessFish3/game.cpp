@@ -34,6 +34,7 @@ constexpr U64 bqcastle = 0b01110000000000000000000000000000000000000000000000000
 
 #define en_passent_target(bord) ((~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))))
 #define white_plays(bord) ((bord->extra &= (1ULL << 18)) != 0)
+
 // bit manipulation macros
 #define get_bit(bitboard, index) (bitboard & (1ULL << index))
 #define set_bit(bitboard, index) (bitboard |= (1ULL << index))
@@ -58,6 +59,25 @@ void copyBoard(const Board* bordIn, Board* bordOut) {
 	bordOut->white = bordIn->white;
 	bordOut->black = bordIn->black;
 	bordOut->extra = bordIn->extra;
+}
+
+int findMoveIndex(MOVELIST* moveList, Move* targetMove) {
+	for (int i = 0; i < moveList->count; ++i) {
+		if (moveList->moves[i] == *targetMove) {
+			return i;  // Return the index of the matching move
+		}
+	}
+	return -1;  // Return -1 if the move was not found
+}
+
+U64 incrementByOne(U64 number) {
+	U64 mask = 1;
+	while (number & mask) {
+		number &= ~mask; // Clear the current bit
+		mask <<= 1;      // Move to the next bit
+	}
+	number |= mask;     // Set the first cleared bit
+	return number;
 }
 
 constexpr U64 rook_magics[64] = {
@@ -414,14 +434,14 @@ U64 bitmap_all_black_pawns(Board* bord) {
 
 U64 bitmap_white_king_danger_squares(int position, Board* bord) {
 	clearSquare(bord, position);
-	U64 white_king_danger_squares = all_black_attacks(bord,0);
+	U64 white_king_danger_squares = all_black_attacks(bord);
 	addPiece(bord, WKING, position);
 	return white_king_danger_squares;
 }
 
 U64 bitmap_black_king_danger_squares(int position, Board* bord) {
 	clearSquare(bord, position);
-	U64 black_king_danger_squares = all_white_attacks(bord,0);
+	U64 black_king_danger_squares = all_white_attacks(bord);
 	addPiece(bord, BKING, position);
 	return black_king_danger_squares;
 }
@@ -810,6 +830,9 @@ U64 bitmap_black_queen(int square, Board* bord) {
 	return bitmap_black_rook(square, bord) | bitmap_black_bishop(square, bord);
 }
 
+/*
+* all pieces attacking the white king
+*/
 U64 white_checking_pieces(Board* bord) {
 	U64 attackers = 0ULL; // empty bitboard
 	int king_position = 63 - countTrailingZeros(bord->king & bord->white);
@@ -821,6 +844,9 @@ U64 white_checking_pieces(Board* bord) {
 	return attackers;
 }
 
+/*
+* all pieces attacking the black king
+*/
 U64 black_checking_pieces(Board* bord) {
 	U64 attackers = 0ULL; // empty bitboard
 	int king_position = 63 - countTrailingZeros(bord->king & bord->black);
@@ -942,7 +968,7 @@ U64 black_checking_bitmap(Board* bord) {
 }
 
 
-U64 all_white_attacks(Board* bord, int diepte) {
+U64 all_white_attacks(Board* bord) {
 	U64 wrook = bord->white & bord->rook;
 	U64 wknight = bord->white & bord->knight;
 	U64 wbishop = bord->white & bord->bishop;
@@ -979,7 +1005,7 @@ U64 all_white_attacks(Board* bord, int diepte) {
 	return attacks;// &white_checking_bitmap(bord);
 }
 
-U64 all_black_attacks(Board* bord, int diepte) {
+U64 all_black_attacks(Board* bord) {
 	U64 brook = bord->black & bord->rook;
 	U64 bknight = bord->black & bord->knight;
 	U64 bbishop = bord->black & bord->bishop;
@@ -1338,16 +1364,6 @@ void black_moves(MOVELIST* movelist, Board* bord) {
 	}
 }
 
-bool EvaluateQuick(Board* bord) {
-	if ((bord->extra &= (1ULL << 18)) == 0) {
-		return (((bord->king & bord->white) & all_black_attacks(bord, 1))) == 0;
-	}
-	else {
-		return (((bord->king & bord->black) & all_white_attacks(bord,1))) == 0;
-	}
-	//return OpponentHasMoves(bord);
-}
-
 void GenMoveList(MOVELIST* list, Board* bord) {
 	// Generate all moves, including illegal (e.g. put king in check) moves
 	if (white_plays(bord)) {
@@ -1377,7 +1393,7 @@ void addLegalMoveList(MOVELIST* list, Board* bord) {
 	{
 		copyBoard(bord, &bordCopy);
 		makeMove(&bordCopy, &list2.moves[i]);
-		okay = EvaluateQuick(bord);
+		okay = !inCheck(bord);
 		//popMove(bord, &list2.moves[i]);
 		if (okay)
 			list->moves[j++] = list2.moves[i];
@@ -1405,7 +1421,7 @@ void GenLegalMoveList(MOVELIST* list, Board* bord) {
 	{
 		copyBoard(bord, &bordCopy);
 		makeMove(&bordCopy, &list2.moves[i]);
-		okay = EvaluateQuick(&bordCopy);
+		okay = !inCheck(&bordCopy);
 		//popMove(bord, &list2.moves[i]);
 		if (okay)
 			list->moves[j++] = list2.moves[i];
@@ -1435,7 +1451,7 @@ bool OpponentHasMoves(Board* bord) {
 	{
 		copyBoard(bord, &bordCopy);
 		makeMove(&bordCopy, &list2.moves[i]);
-		okay = EvaluateQuick(&bordCopy);
+		okay = !inCheck(&bordCopy);
 		if (okay) j++;
 	}
 	return j > 0;
@@ -1463,10 +1479,21 @@ bool weHaveMoves(Board* bord) {
 	{
 		copyBoard(bord, &bordCopy);
 		makeMove(&bordCopy, &list2.moves[i]);
-		okay = EvaluateQuick(&bordCopy);
+		okay = !inCheck(&bordCopy);
 		if (okay) j++;
 	}
 	return j > 0;
+}
+
+bool inCheck(Board* bord) {
+	if (white_plays(bord)) {
+		//return countSetBits(white_checking_pieces(bord)) != 0;
+		return ((bord->white & bord->king) & all_black_attacks(bord)) != 0;
+	}
+	else {
+		//return countSetBits(black_checking_pieces(bord)) != 0;
+		return ((bord->black & bord->king) & all_white_attacks(bord)) != 0;
+	}
 }
 
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
@@ -2006,6 +2033,7 @@ void readInFen(Board* bord, std::string* fen) {
 
 // Function to make a move
 void makeMove(Board* bord, Move* move) {
+	//bord->extra = (bord->extra & ~0x7F) | ((bord->extra + 1) & 0x7F); //TODO halfmove clock
 	//lastCapturedPiece = NOPIECE; //TODO needed if i make a popMove
 	// Update the pawns bitboard to reflect the move
 	U64 fromBit = ((1ULL << 63) >> move->src);
@@ -2042,6 +2070,7 @@ void makeMove(Board* bord, Move* move) {
 		}
 
 		if ((bord->rook & fromBit) != 0) {
+			//bord->extra = (bord->extra & ~0x7F) | (((bord->extra & 0x7F) + 1) & 0x7F);
 			if ((((1ULL << 63) >> (A8)) & fromBit) != 0) {
 				bord->extra &= ~(1ULL << 14); // remove white kingside casteling ability
 			}

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <iostream>
+#include <unordered_map>
 
 typedef unsigned long long U64;
 
@@ -12,6 +13,7 @@ typedef unsigned long long U64;
 				//[Q   2*B    2*R    2*N   K   8*P] +  [3*Q]
 				//             ^                         ^
 				//[calculated practical maximum   ] + [margin]
+
 
 // TODO: Reference additional headers your program requires here.
 struct Board {
@@ -36,6 +38,42 @@ struct Board {
 	// 6,7,8,9,10,11,12) posible en passent target (bit 6 displays if data is valid)
 	// 13,14,15,16,17,18,19) halfmove clock (if 100 (dec) its draw)
 };
+
+namespace std {
+	template<>
+	struct hash<Board> {
+		size_t operator()(const Board& board) const {
+			// Combine the hash values of individual components of the board
+			// to create a unique hash value for the entire board.
+			size_t combinedHash = hash<U64>{}(board.rook) ^
+				hash<U64>{}(board.knight) ^
+				hash<U64>{}(board.bishop) ^
+				hash<U64>{}(board.queen) ^
+				hash<U64>{}(board.king) ^
+				hash<U64>{}(board.pawn) ^
+				hash<U64>{}(board.white) ^
+				hash<U64>{}(board.black) ^
+				hash<U64>{}(board.extra);
+			return combinedHash;
+		}
+	};
+
+	template<>
+	struct equal_to<Board> {
+		bool operator()(const Board& lhs, const Board& rhs) const {
+			// Compare individual components of the boards to determine equality.
+			return lhs.rook == rhs.rook &&
+				lhs.knight == rhs.knight &&
+				lhs.bishop == rhs.bishop &&
+				lhs.queen == rhs.queen &&
+				lhs.king == rhs.king &&
+				lhs.pawn == rhs.pawn &&
+				lhs.white == rhs.white &&
+				lhs.black == rhs.black &&
+				lhs.extra == rhs.extra;
+		}
+	};
+}
 
 enum Square {
 	A8 = 0, B8, C8, D8, E8, F8, G8, H8,
@@ -136,8 +174,33 @@ struct MOVELIST{
 	Move moves[MAXMOVES];
 };
 
+struct TranspositionTableEntry {
+	int score;
+	int depth;
+	Move bestMove;
+};
+
+class TranspositionTable {
+public:
+	void store(Board* bord, const int score, const int depth, Move bestMove) {
+		table[*bord] = { score, depth, bestMove };
+	}
+
+	TranspositionTableEntry* lookup(Board* bord) {
+		auto it = table.find(*bord);
+		if (it != table.end()) {
+			return &(it->second);
+		}
+		return nullptr;
+	}
+
+private:
+	std::unordered_map<Board, TranspositionTableEntry> table;
+};
+
 int countSetBits(U64 number);
 int getFirst1BitSquare(U64 number);
+int findMoveIndex(MOVELIST* moveList, Move* targetMove);
 
 Pieces pieceAt(int square, Board* bord);
 
@@ -184,14 +247,15 @@ U64 bitmap_black_bishop(int square, Board* bord);
 U64 bitmap_white_knight(int square, Board* bord);
 U64 bitmap_black_knight(int square, Board* bord);
 
-U64 all_white_attacks(Board* bord, int diepte);
-U64 all_black_attacks(Board* bord, int diepte);
+U64 all_white_attacks(Board* bord);
+U64 all_black_attacks(Board* bord);
 
 void GenMoveList(MOVELIST* list, Board* bord);
 void GenLegalMoveList(MOVELIST* list, Board* bord);
 void addLegalMoveList(MOVELIST* list, Board* bord);
 bool OpponentHasMoves(Board* bord);
 bool weHaveMoves(Board* bord);
+bool inCheck(Board* bord);
 
 U64 squaresBetweenBitmap(int startSquare, int endSquare);
 U64 white_checking_bitmap(Board* bord);
@@ -204,3 +268,5 @@ void readInFen(Board* bord, std::string* fen);
 std::string squareToString(Square square);
 std::string specialToString(SPECIAL special);
 std::string moveToString(Move* move);
+
+U64 incrementByOne(U64 number);

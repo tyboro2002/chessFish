@@ -184,8 +184,8 @@ bool check_end_game(Board* bord) {
     */
     int queens = 0;
     int minors = 0;
-    U64 queensBitmap = bord->queen;// &color;
-    U64 minorsBitmap = (bord->bishop | bord->knight);// &color;
+    U64 queensBitmap = bord->queen;
+    U64 minorsBitmap = (bord->bishop | bord->knight);
     queens = countSetBits(queensBitmap);
     minors = countSetBits(minorsBitmap);
     return queens == 0 || (queens == 2 && minors <= 1);
@@ -285,9 +285,6 @@ int evaluate(Board* bord) {
 std::tuple<int, int> evaluateBothSides(Board* bord) {
     return std::make_tuple(evaluateWhite(bord), evaluateBlack(bord));
 }
-
-//double move_value(thc::ChessRules* cr, thc::Move* mv, bool endgame);
-//int evaluate_piece(char piece, int square, bool endgame);
 
 int evaluate_capture(Board* bord, Move* mv) {
     /*
@@ -430,15 +427,15 @@ void get_orderd_moves(Board* bord, MOVELIST* moveList) {
     orderMoves(bord, moveList);
 }
 
-double minimax(Board* bord, double alpha, double beta, int depth, bool maximizing_player, bool whiteVraagteken, int* counter) {//, TranspositionTable* transpositionTable) {
+double minimax(Board* bord, double alpha, double beta, int depth, bool maximizing_player, bool whiteVraagteken, int* counter, TranspositionTable* transpositionTable) {
     //std::string key = generateHashKey(cr);
 
     // Lookup the position in the Transposition Table
-    //TranspositionTableEntry* ttEntry = transpositionTable->lookup(key);
-    //if (ttEntry != nullptr && ttEntry->depth >= depth) {
+    TranspositionTableEntry* ttEntry = transpositionTable->lookup(bord);
+    if (ttEntry != nullptr && ttEntry->depth >= depth) {
         // Return the stored evaluation score if depth is sufficient
-    //    return ttEntry->score;
-    //}
+        return ttEntry->score;
+    }
 
     TERMINAL eval_final_position;
     //bool legal = cr->Evaluate(eval_final_position); //TODO
@@ -474,7 +471,7 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
             if (!weHaveMoves(&boardCopy)) {
                 return INFINITY;
             }
-            double curr_move = minimax(&boardCopy, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter);//, transpositionTable);
+            double curr_move = minimax(&boardCopy, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter, transpositionTable);
 
             // Each ply after a checkmate is slower, so they get ranked slightly less
             // We want the fastest mate!
@@ -487,7 +484,7 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
             best_move = (best_move > curr_move) ? best_move : curr_move;
             alpha = (alpha > best_move) ? alpha : best_move;
             if (beta <= alpha) {
-                //transpositionTable->store(key, best_move, depth, &move);
+                transpositionTable->store(bord, best_move, depth, move);
                 return best_move;
             }
         }
@@ -509,7 +506,7 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
             if (!weHaveMoves(&boardCopy)) {
                 return -INFINITY;
             }
-            double curr_move = minimax(&boardCopy, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter);//, transpositionTable);
+            double curr_move = minimax(&boardCopy, alpha, beta, depth - 1, !maximizing_player, !whiteVraagteken, counter, transpositionTable);
             // Each ply after a checkmate is slower, so they get ranked slightly less
             // We want the fastest mate!
             if (curr_move > MATE_THRESHOLD) {
@@ -521,7 +518,7 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
             best_move = (best_move < curr_move) ? best_move : curr_move;
             beta = (beta < best_move) ? beta : best_move;
             if (beta <= alpha) {
-                //transpositionTable->store(key, best_move, depth, &move);
+                transpositionTable->store(bord, best_move, depth, move);
                 return best_move;
             }
         }
@@ -529,16 +526,20 @@ double minimax(Board* bord, double alpha, double beta, int depth, bool maximizin
     }
 }
 
-void minimax_root(Board* bord, int depth, bool maximize, Move* moveOut, MOVELIST* moveList) {//, TranspositionTable* transpositionTable) {
+void minimax_root(Board* bord, int depth, bool maximize, Move* moveOut, MOVELIST* moveList, TranspositionTable* transpositionTable) {
     //What is the highest value move per our evaluation function?
     //std::string key = generateHashKey(cr);
 
     // Lookup the position in the Transposition Table
-    //TranspositionTableEntry* ttEntry = transpositionTable->lookup(key);
-    //if (ttEntry != nullptr && ttEntry->depth >= depth) {
+    TranspositionTableEntry* ttEntry = transpositionTable->lookup(bord);
+    if (ttEntry != nullptr && ttEntry->depth >= depth) {
         // Return the stored evaluation score if depth is sufficient
-    //    return *(ttEntry->bestMove);
-    //}
+        moveOut->src = (ttEntry->bestMove).src;
+        moveOut->dst = (ttEntry->bestMove).dst;
+        moveOut->special = (ttEntry->bestMove).special;
+        moveOut->capture = (ttEntry->bestMove).capture;
+        return;
+    }
 
     double best_move = maximize ? -INFINITY : INFINITY;
     orderMoves(bord, moveList);
@@ -564,7 +565,7 @@ void minimax_root(Board* bord, int depth, bool maximize, Move* moveOut, MOVELIST
         int branchCount = 0;
         int* branchCounter = &branchCount;
         //if (!cr->IsDraw(cr->WhiteToPlay(), drawtype)) {
-        value = minimax(&boardCopy, -INFINITY, INFINITY, depth - 1, !maximize, !white_plays((&boardCopy)), branchCounter);//, transpositionTable);
+        value = minimax(&boardCopy, -INFINITY, INFINITY, depth - 1, !maximize, !white_plays((&boardCopy)), branchCounter, transpositionTable);
         //}
         //cout << "move: " << move.NaturalOut(cr) << " " << branchCount << endl;
         if (maximize && value > best_move) {
@@ -577,17 +578,17 @@ void minimax_root(Board* bord, int depth, bool maximize, Move* moveOut, MOVELIST
         }
         //cout << "move: " << moveToString(&move) << " has value: " << best_move << endl;
     }
-    //transpositionTable->store(key, best_move, depth, &best_move_found);
+    transpositionTable->store(bord, best_move, depth, best_move_found);
     moveOut->src = best_move_found.src;
     moveOut->dst = best_move_found.dst;
     moveOut->capture = best_move_found.capture;
     moveOut->special = best_move_found.special;
 }
 
-void makeMiniMaxMove(Board* bord, MOVELIST* moveList, int depth, bool maximize) {
+void makeMiniMaxMove(Board* bord, MOVELIST* moveList, int depth, bool maximize, TranspositionTable* transpositionTable) {
     Move moveOut;
-    minimax_root(bord, depth, maximize, &moveOut, moveList);//, TranspositionTable * transpositionTable)
-    cout << "the minimax engine selected: " << moveToString(&moveOut) << endl;
+    minimax_root(bord, depth, maximize, &moveOut, moveList, transpositionTable);
+    cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList->count << " moves and it was located at position: " << findMoveIndex(moveList,&moveOut) << endl;
     makeMove(bord, &moveOut);
 }
 

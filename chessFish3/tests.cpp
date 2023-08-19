@@ -21,7 +21,7 @@ void king_danger_squares_test() {
 	addPiece(&bord, WROOK, E4);
 	addPiece(&bord, WROOK, H7);
 	printBoard(&bord);
-	printBitBoard(all_black_attacks(&bord, 1), "black moves");
+	printBitBoard(all_black_attacks(&bord), "black moves");
 	printBitBoard(bitmap_black_king(E7, &bord), "black king moves");
 	printBitBoard(black_checking_pieces(&bord), "black checking pieces");
 
@@ -79,6 +79,24 @@ void move_test() {
 	printBoard(&bord);
 }
 
+void move_test_halfmove() {
+	Board bord;
+	Move move;
+	MOVELIST moveList;
+	// Clear move list
+	moveList.count = 0;   // set each field for each move
+
+	setup(&bord);
+	printBoard(&bord);
+
+	for (int i = 0; i < 10; i++) {
+		GenLegalMoveList(&moveList, &bord);
+		makeRandomMove(&bord, &moveList);
+		printBoard(&bord);
+		cout << std::bitset<64>(bord.extra) << endl;
+	}
+}
+
 void move_test_check() {
 	Board bord;
 	Move move;
@@ -92,7 +110,7 @@ void move_test_check() {
 	addPiece(&bord, BKING, D6);
 	addPiece(&bord, WKNIGHT, D3);
 	printBoard(&bord);
-	printBitBoard(all_white_attacks(&bord, 1), "all white attacks");
+	printBitBoard(all_white_attacks(&bord), "all white attacks");
 }
 
 void randomMoveTest() {
@@ -146,10 +164,37 @@ void legalMoveTest() {
 /*
 * further tests are automatic tests
 */
+
+bool inCheckTest() {
+	Board bord;
+	Move move;
+	setup(&bord);
+	std::string fen;
+
+	fen = "4k3/8/4K3/8/8/8/8/8 b - - 0 1";
+	readInFen(&bord, &fen);
+	cout << inCheck(&bord) << endl;
+
+	fen = "rnbqkbnr/pppp1ppp/8/8/8/4Q3/PPPPPPPP/RNB1KBNR b KQkq - 0 1";
+	readInFen(&bord, &fen);
+	cout << inCheck(&bord) << endl;
+
+	// easy tests
+	fen = "rnbqkbnr/pppp1ppp/8/8/8/4Q3/PPPPPPPP/RNB1KBNR b KQkq - 0 1";
+	readInFen(&bord, &fen);
+	if (!inCheck(&bord)) return false;
+
+	fen = "4k2R/8/4K3/8/8/8/8/8 b - - 0 1";
+	readInFen(&bord, &fen);
+	if (!inCheck(&bord)) return false;
+
+	return true;
+}
 bool mateInOneTest() {
 	Board bord;
 	Move move;
 	Move moveOut;
+	TranspositionTable transpositionTable;
 	setupEmpty(&bord);
 	std::string fen = "4kb1r/p2ppppp/8/8/8/8/P1PPPPPP/RQ2KB1R w - - 0 1";
 	readInFen(&bord, &fen);
@@ -159,7 +204,8 @@ bool mateInOneTest() {
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
 
-	minimax_root(&bord, 1, true, &moveOut, &moveList);
+	minimax_root(&bord, 1, true, &moveOut, &moveList, &transpositionTable);
+	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = B1;
 	move.dst = B8;
 	move.capture = -52;
@@ -173,6 +219,7 @@ bool mateInTwoTest() {
 	Board bord;
 	Move move;
 	Move moveOut;
+	TranspositionTable transpositionTable;
 	setupEmpty(&bord);
 	std::string fen = "r1bq2r1/b4pk1/p1pp1p2/1p2pP2/1P2P1PB/3P4/1PP3P1/R1Q1K2R w - - 0 1";
 	readInFen(&bord, &fen);
@@ -184,7 +231,8 @@ bool mateInTwoTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = C1;
 	move.dst = H6;
 	move.capture = -52;
@@ -198,7 +246,8 @@ bool mateInTwoTest() {
 	//black move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = G7;
 	move.dst = H6;
 	move.capture = H6;
@@ -213,7 +262,8 @@ bool mateInTwoTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = H4;
 	move.dst = F6;
 	move.capture = F6;
@@ -230,6 +280,7 @@ bool mateInThreeTest() {
 	Board bord;
 	Move move;
 	Move moveOut;
+	TranspositionTable transpositionTable;
 	setupEmpty(&bord);
 	std::string fen = "r3k2r/ppp2Npp/1b5n/4p2b/2B1P2q/BQP2P2/P5PP/RN5K w kq - 1 0";
 	readInFen(&bord, &fen);
@@ -241,7 +292,8 @@ bool mateInThreeTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = C4;
 	move.dst = B5;
 	move.capture = -52;
@@ -255,7 +307,8 @@ bool mateInThreeTest() {
 	//black move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = C7;
 	move.dst = C6;
 	move.capture = -52;
@@ -270,7 +323,8 @@ bool mateInThreeTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = B3;
 	move.dst = E6;
 	move.capture = -52;
@@ -284,7 +338,8 @@ bool mateInThreeTest() {
 	//black move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = H4;
 	move.dst = E7;
 	move.capture = -52;
@@ -298,7 +353,8 @@ bool mateInThreeTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = E6;
 	move.dst = E7;
 	move.capture = E7;
@@ -312,6 +368,15 @@ bool mateInThreeTest() {
 }
 
 void runAutomatedTests() {
+	// run inCheck test
+	cout << "in Check test" << endl;
+	if (inCheckTest()) {
+		cout << "SUCCEED" << endl;
+	}
+	else {
+		cout << "FAILED" << endl;
+	}
+	/*
 	// run mate in one test
 	cout << "mate in one test" << endl;
 	if (mateInOneTest()) {
@@ -336,11 +401,13 @@ void runAutomatedTests() {
 	else {
 		cout << "FAILED" << endl;
 	}
+	*/
 }
 
 void runAutomatedTestsSilent() {
-	//if (!mateInOneTest()) cout << "mate in one test FAILED" << endl;
-	//if (!mateInTwoTest()) cout << "mate in two test FAILED" << endl;
+	if (!inCheckTest()) cout << "check test FAILED" << endl;
+	if (!mateInOneTest()) cout << "mate in one test FAILED" << endl;
+	if (!mateInTwoTest()) cout << "mate in two test FAILED" << endl;
 	if (!mateInThreeTest()) cout << "mate in three test FAILED" << endl;
 }
 
@@ -364,4 +431,16 @@ void knightMovesGenerator() {
 		//printBitBoard(bitmap_white_knight(i, &bord), "");
 		cout << std::bitset<64>(bitmap_white_knight(i, &bord)) << endl;
 	}
+}
+
+void randomTest() {
+	U64 test = 0;
+	for (int i = 0; i < 1000000000; i++) {
+		test = incrementByOne(test);
+		if (!test == (i + 1)) {
+			cout << "failed at: " << i + 1 << endl;
+			return;
+		}
+	}
+	cout << "succeed" << endl;
 }
