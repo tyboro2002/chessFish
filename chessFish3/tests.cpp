@@ -168,16 +168,8 @@ void legalMoveTest() {
 bool inCheckTest() {
 	Board bord;
 	Move move;
-	setup(&bord);
+	setupEmpty(&bord);
 	std::string fen;
-
-	fen = "4k3/8/4K3/8/8/8/8/8 b - - 0 1";
-	readInFen(&bord, &fen);
-	cout << inCheck(&bord) << endl;
-
-	fen = "rnbqkbnr/pppp1ppp/8/8/8/4Q3/PPPPPPPP/RNB1KBNR b KQkq - 0 1";
-	readInFen(&bord, &fen);
-	cout << inCheck(&bord) << endl;
 
 	// easy tests
 	fen = "rnbqkbnr/pppp1ppp/8/8/8/4Q3/PPPPPPPP/RNB1KBNR b KQkq - 0 1";

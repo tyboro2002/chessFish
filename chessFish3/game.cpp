@@ -1492,12 +1492,11 @@ bool weHaveMoves(Board* bord) {
 
 bool inCheck(Board* bord) {
 	if (white_plays(bord)) {
-		//return countSetBits(white_checking_pieces(bord)) != 0;
-		return ((bord->white & bord->king) & all_black_attacks(bord)) != 0;
-	}
-	else {
-		//return countSetBits(black_checking_pieces(bord)) != 0;
-		return ((bord->black & bord->king) & all_white_attacks(bord)) != 0;
+		return countSetBits(white_checking_pieces(bord)) != 0;
+		//return ((bord->white & bord->king) & all_black_attacks(bord)) != 0;
+	}else {
+		return countSetBits(black_checking_pieces(bord)) != 0;
+		//return ((bord->black & bord->king) & all_white_attacks(bord)) != 0;
 	}
 }
 
@@ -1944,6 +1943,7 @@ std::string specialToString(SPECIAL special) {
 }
 
 void readInFen(Board* bord, std::string* fen) {
+	setupEmpty(bord);
 	fen->erase(std::remove(fen->begin(), fen->end(), '/'), fen->end());
 	//cout << *fen << endl;
 	int index = -1;
