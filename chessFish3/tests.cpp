@@ -170,8 +170,20 @@ bool inCheckTest() {
 	Move move;
 	setupEmpty(&bord);
 	std::string fen;
+	// white
+	// in check tests
+	fen = "RNBQKBNR/PPPP1PPP/8/8/8/4q3/pppppppp/rnb1kbnr w KQkq - 0 1";
+	readInFen(&bord, &fen);
+	if (!inCheck(&bord)) return false;
 
-	// easy tests
+	// not in check tests
+	fen = "R1B1KBR1/PPbP1N1P/6P1/3p4/6p1/8/ppp1pp1p/rn2kb1r w KQq - 0 1";
+	readInFen(&bord, &fen);
+	if (inCheck(&bord)) return false;
+
+
+	// black
+	// in check tests
 	fen = "rnbqkbnr/pppp1ppp/8/8/8/4Q3/PPPPPPPP/RNB1KBNR b KQkq - 0 1";
 	readInFen(&bord, &fen);
 	if (!inCheck(&bord)) return false;
@@ -180,8 +192,27 @@ bool inCheckTest() {
 	readInFen(&bord, &fen);
 	if (!inCheck(&bord)) return false;
 
+	fen = "r1b1kbr1/ppBp1n1p/6p1/3P4/6P1/4Q3/PPP1PP1P/RN2KB1R b KQq - 0 1";
+	readInFen(&bord, &fen);
+	if (!inCheck(&bord)) return false;
+
+	// not in check tests
+	fen = "r1b1kbr1/ppBp1n1p/6p1/3P4/6P1/8/PPP1PP1P/RN2KB1R b KQq - 0 1";
+	readInFen(&bord, &fen);
+	if (inCheck(&bord)) return false;
+
+	fen = "r1b1kbr1/ppBp1n1p/Q5pQ/Q6Q/Q6Q/Q6Q/P3P3/RN2KB1R b - - 0 1";
+	readInFen(&bord, &fen);
+	if (inCheck(&bord)) return false;
+
+	fen = "r1bqkbr1/pprp1n1p/Q2PN1pQ/Q3R2B/Q6Q/Q6Q/P3P3/1N2K2R b - - 0 1";
+	readInFen(&bord, &fen);
+	if (inCheck(&bord)) return false;
+
 	return true;
 }
+
+
 bool mateInOneTest() {
 	Board bord;
 	Move move;
@@ -359,7 +390,7 @@ bool mateInThreeTest() {
 	return move == moveOut;
 }
 
-void runAutomatedTests() {
+bool runAutomatedTests() {
 	// run inCheck test
 	cout << "in Check test" << endl;
 	if (inCheckTest()) {
@@ -367,6 +398,7 @@ void runAutomatedTests() {
 	}
 	else {
 		cout << "FAILED" << endl;
+		return false;
 	}
 	/*
 	// run mate in one test
@@ -376,6 +408,7 @@ void runAutomatedTests() {
 	}
 	else {
 		cout << "FAILED" << endl;
+		return false;
 	}
 	// run mate in two test
 	cout << "mate in two test" << endl;
@@ -384,6 +417,7 @@ void runAutomatedTests() {
 	}
 	else {
 		cout << "FAILED" << endl;
+		return false;
 	}
 	// run mate in three test
 	cout << "mate in three test" << endl;
@@ -392,15 +426,30 @@ void runAutomatedTests() {
 	}
 	else {
 		cout << "FAILED" << endl;
+		return false;
 	}
 	*/
+	return true;
 }
 
-void runAutomatedTestsSilent() {
-	if (!inCheckTest()) cout << "check test FAILED" << endl;
-	if (!mateInOneTest()) cout << "mate in one test FAILED" << endl;
-	if (!mateInTwoTest()) cout << "mate in two test FAILED" << endl;
-	if (!mateInThreeTest()) cout << "mate in three test FAILED" << endl;
+bool runAutomatedTestsSilent() {
+	if (!inCheckTest()) {
+		cout << "check test FAILED" << endl;
+		return false;
+	}
+	if (!mateInOneTest()) {
+		cout << "mate in one test FAILED" << endl;
+		return false;
+	}
+	if (!mateInTwoTest()){
+		cout << "mate in two test FAILED" << endl;
+		return false;
+	}
+	if (!mateInThreeTest()){
+		cout << "mate in three test FAILED" << endl;
+		return false;
+	}
+	return true;
 }
 
 void kingMovesGenerator() {

@@ -18,8 +18,8 @@ void move_test_halfmove();
 /*
 * automatic tests
 */
-void runAutomatedTests();
-void runAutomatedTestsSilent();
+bool runAutomatedTests();
+bool runAutomatedTestsSilent();
 bool inCheckTest();
 bool mateInOneTest();
 bool mateInTwoTest();
