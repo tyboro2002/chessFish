@@ -27,8 +27,17 @@ struct Board {
 	// colors
 	U64 white;
 	U64 black;
-	// extra info
-	U64 extra;
+	// extra info (packed in one 64bit number)
+	//U64 extra;
+	U64 whiteToPlay : 1;
+	U64 whiteKingsideCastle : 1;
+	U64 whiteQueensideCastle : 1;
+	U64 blackKingsideCastle : 1;
+	U64 blackQueensideCastle : 1;
+	U64 enPassentValid : 1;
+	U64 enPassantTarget : 6;
+	U64 halfmoveClock : 7;
+	U64 reserved : 45;
 	// extra info consists of 19 bits meaning
 	// 1) white to play
 	// 2) white kingside casteling aviable
@@ -52,8 +61,8 @@ namespace std {
 				hash<U64>{}(board.king) ^
 				hash<U64>{}(board.pawn) ^
 				hash<U64>{}(board.white) ^
-				hash<U64>{}(board.black) ^
-				hash<U64>{}(board.extra);
+				hash<U64>{}(board.black);//^
+				//hash<U64>{}(board.extra);
 			return combinedHash;
 		}
 	};
@@ -70,7 +79,17 @@ namespace std {
 				lhs.pawn == rhs.pawn &&
 				lhs.white == rhs.white &&
 				lhs.black == rhs.black &&
-				lhs.extra == rhs.extra;
+				lhs.whiteToPlay == rhs.whiteToPlay &&
+				lhs.whiteKingsideCastle == rhs.whiteKingsideCastle &&
+				lhs.whiteQueensideCastle == rhs.whiteQueensideCastle &&
+				lhs.blackKingsideCastle == rhs.blackKingsideCastle &&
+				lhs.blackQueensideCastle == rhs.blackQueensideCastle &&
+				lhs.enPassentValid == rhs.enPassentValid &&
+				lhs.enPassantTarget == rhs.enPassantTarget &&
+				lhs.halfmoveClock == rhs.halfmoveClock &&
+				lhs.reserved == rhs.reserved;
+
+				//lhs.extra == rhs.extra;
 		}
 	};
 }
@@ -208,10 +227,10 @@ class PositionTracker {
 public:
 	//PositionTracker() {} //constructor
 
-	void addPosition(const Board* position) {
+	bool addPosition(const Board* position) {
 		size_t positionHash = std::hash<Board>{}(*position);
 		positionRecords[positionHash].occurrences++;
-		// You can also add additional data to the position record if needed
+		return positionRecords[positionHash].occurrences >= 3;
 	}
 
 	void removePosition(const Board* position) {
@@ -252,7 +271,7 @@ void addPiece(Board* bord, Pieces piece, int square);
 void clearSquare(Board* bord, int square);
 void printBoard(Board* bord);
 void printBitBoard(U64 bitbord, std::string extra);
-void makeMove(Board* bord, Move* move);
+void makeMove(Board* bord, Move* move, PositionTracker* positionTracker);
 void popMove(Board* bord, Move* move);
 
 void white_pawn_moves(int position, MOVELIST* movelist, Board* bord);

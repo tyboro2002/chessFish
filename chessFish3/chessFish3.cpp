@@ -15,6 +15,7 @@ void runGame() {
 	Move move;
     MOVELIST moveList;
 	TranspositionTable transpositionTable;
+	PositionTracker positionTracker;
 	//setupEmpty(&bord);
 	//std::string fen = "4kb1r/p2ppppp/8/8/8/8/P1PPPPPP/RQ2KB1R w - - 0 1";
 	//readInFen(&bord, &fen);
@@ -23,11 +24,9 @@ void runGame() {
 	int duration;
 	cout << "how many moves do you want to play max?" << endl;
 	cin >> duration;
-	cout << duration << endl;
 	if (duration == -1) {
 		duration = std::numeric_limits<int>::max();
 	}
-	cout << duration << endl;
 	cout << "wich engine do you want to player A to be?" << endl;
 	printEngines();
 	int engineNumberA;
@@ -57,13 +56,13 @@ void runGame() {
 		if (engineNumberA == 0) {
 			askForMove(&bord, &move, &moveList);
 			cout << "You selected: " << moveToString(&move) << endl;
-			makeMove(&bord, &move);
+			makeMove(&bord, &move, &positionTracker);
 		}else if (engineNumberA == 1) {
-			makeRandomMove(&bord, &moveList);
+			makeRandomMove(&bord, &moveList, &positionTracker);
 		}else if (engineNumberA == 2) {
-			makeMiniMaxMove(&bord, &moveList, depth, true, &transpositionTable);
+			makeMiniMaxMove(&bord, &moveList, depth, true, &transpositionTable, &positionTracker);
 		}else if (engineNumberA == 3) {
-			makeMiniMaxOptimizedMove(&bord, &moveList, depth, true, &transpositionTable);
+			makeMiniMaxOptimizedMove(&bord, &moveList, depth, true, &transpositionTable, &positionTracker);
 		}
         printBoard(&bord);
         GenLegalMoveList(&moveList, &bord);
@@ -75,14 +74,14 @@ void runGame() {
             if (engineNumberB == 0) {
                 askForMove(&bord, &move, &moveList);
                 cout << "You selected: " << moveToString(&move) << endl;
-                makeMove(&bord, &move);
+                makeMove(&bord, &move, &positionTracker);
             }
 			else if (engineNumberB == 1) {
-				makeRandomMove(&bord, &moveList);
+				makeRandomMove(&bord, &moveList, &positionTracker);
 			}else if (engineNumberB == 2) {
-				makeMiniMaxMove(&bord, &moveList, depth, true, &transpositionTable);
+				makeMiniMaxMove(&bord, &moveList, depth, true, &transpositionTable, &positionTracker);
 			}else if (engineNumberB == 3) {
-				makeMiniMaxOptimizedMove(&bord, &moveList, depth, true, &transpositionTable);
+				makeMiniMaxOptimizedMove(&bord, &moveList, depth, true, &transpositionTable, &positionTracker);
 			}
             i++;
         }

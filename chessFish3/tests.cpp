@@ -66,6 +66,7 @@ void move_test() {
 	Board bord;
 	Move move;
 	MOVELIST moveList;
+	PositionTracker positionTracker;
 	// Clear move list
 	moveList.count = 0;   // set each field for each move
 
@@ -75,7 +76,7 @@ void move_test() {
 	move.src = F8;
 	move.dst = B4;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &move);
+	makeMove(&bord, &move, &positionTracker);
 	printBoard(&bord);
 }
 
@@ -83,6 +84,7 @@ void move_test_halfmove() {
 	Board bord;
 	Move move;
 	MOVELIST moveList;
+	PositionTracker positionTracker;
 	// Clear move list
 	moveList.count = 0;   // set each field for each move
 
@@ -91,9 +93,9 @@ void move_test_halfmove() {
 
 	for (int i = 0; i < 10; i++) {
 		GenLegalMoveList(&moveList, &bord);
-		makeRandomMove(&bord, &moveList);
+		makeRandomMove(&bord, &moveList, &positionTracker);
 		printBoard(&bord);
-		cout << std::bitset<64>(bord.extra) << endl;
+		cout << bord.halfmoveClock << endl;
 	}
 }
 
@@ -117,11 +119,12 @@ void randomMoveTest() {
 	Board bord;
 	Move move;
 	MOVELIST moveList;
+	PositionTracker positionTracker;
 	// Clear move list
 	moveList.count = 0;   // set each field for each move
 	setup(&bord);
 	for (int i = 0; i < 7; i++) {
-		makeRandomMove(&bord, &moveList);
+		makeRandomMove(&bord, &moveList, &positionTracker);
 	}
 }
 
@@ -218,6 +221,7 @@ bool mateInOneTest() {
 	Move move;
 	Move moveOut;
 	TranspositionTable transpositionTable;
+	PositionTracker positionTracker;
 	setupEmpty(&bord);
 	std::string fen = "4kb1r/p2ppppp/8/8/8/8/P1PPPPPP/RQ2KB1R w - - 0 1";
 	readInFen(&bord, &fen);
@@ -227,13 +231,13 @@ bool mateInOneTest() {
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
 
-	minimax_root(&bord, 1, true, &moveOut, &moveList, &transpositionTable);
+	minimax_root(&bord, 1, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = B1;
 	move.dst = B8;
 	move.capture = -52;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &moveOut);
+	makeMove(&bord, &moveOut, &positionTracker);
 	//printBoard(&bord);
 	return move == moveOut;
 }
@@ -243,6 +247,7 @@ bool mateInTwoTest() {
 	Move move;
 	Move moveOut;
 	TranspositionTable transpositionTable;
+	PositionTracker positionTracker;
 	setupEmpty(&bord);
 	std::string fen = "r1bq2r1/b4pk1/p1pp1p2/1p2pP2/1P2P1PB/3P4/1PP3P1/R1Q1K2R w - - 0 1";
 	readInFen(&bord, &fen);
@@ -254,13 +259,13 @@ bool mateInTwoTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = C1;
 	move.dst = H6;
 	move.capture = -52;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &moveOut);
+	makeMove(&bord, &moveOut, &positionTracker);
 	//printBoard(&bord);
 	if (!(move == moveOut)) {
 		return false;
@@ -269,13 +274,13 @@ bool mateInTwoTest() {
 	//black move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = G7;
 	move.dst = H6;
 	move.capture = H6;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &moveOut);
+	makeMove(&bord, &moveOut, &positionTracker);
 	//printBoard(&bord);
 	if (!(move == moveOut)) {
 		return false;
@@ -285,13 +290,13 @@ bool mateInTwoTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = H4;
 	move.dst = F6;
 	move.capture = F6;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &moveOut);
+	makeMove(&bord, &moveOut,&positionTracker);
 	//printBoard(&bord);
 	if (!(move == moveOut)) {
 		return false;
@@ -304,6 +309,7 @@ bool mateInThreeTest() {
 	Move move;
 	Move moveOut;
 	TranspositionTable transpositionTable;
+	PositionTracker positionTracker;
 	setupEmpty(&bord);
 	std::string fen = "r3k2r/ppp2Npp/1b5n/4p2b/2B1P2q/BQP2P2/P5PP/RN5K w kq - 1 0";
 	readInFen(&bord, &fen);
@@ -315,13 +321,13 @@ bool mateInThreeTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = C4;
 	move.dst = B5;
 	move.capture = -52;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &moveOut);
+	makeMove(&bord, &moveOut,&positionTracker);
 	//printBoard(&bord);
 	if (!(move == moveOut)) {
 		return false;
@@ -330,13 +336,13 @@ bool mateInThreeTest() {
 	//black move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = C7;
 	move.dst = C6;
 	move.capture = -52;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &moveOut);
+	makeMove(&bord, &moveOut, &positionTracker);
 	//printBoard(&bord);
 	if (!(move == moveOut)) {
 		return false;
@@ -346,13 +352,13 @@ bool mateInThreeTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = B3;
 	move.dst = E6;
 	move.capture = -52;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &moveOut);
+	makeMove(&bord, &moveOut, &positionTracker);
 	//printBoard(&bord);
 	if (!(move == moveOut)) {
 		return false;
@@ -361,13 +367,13 @@ bool mateInThreeTest() {
 	//black move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = H4;
 	move.dst = E7;
 	move.capture = -52;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &moveOut);
+	makeMove(&bord, &moveOut, &positionTracker);
 	//printBoard(&bord);
 	if (!(move == moveOut)) {
 		return false;
@@ -376,13 +382,13 @@ bool mateInThreeTest() {
 	//white move
 	moveList.count = 0;   // set each field for each move
 	GenLegalMoveList(&moveList, &bord);
-	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable);
+	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = E6;
 	move.dst = E7;
 	move.capture = E7;
 	move.special = NOT_SPECIAL;
-	makeMove(&bord, &moveOut);
+	makeMove(&bord, &moveOut, &positionTracker);
 	//printBoard(&bord);
 	if (!(move == moveOut)) {
 		return false;
