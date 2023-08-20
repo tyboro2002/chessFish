@@ -423,6 +423,24 @@ std::string moveToString(Move* move) {
 		captureString;
 }
 
+void printPositionRecords(const PositionTracker* tracker) {
+	for (const auto& entry : tracker->getPositionRecords()) {
+		const size_t positionHash = entry.first;
+		const PositionRecord& record = entry.second;
+
+		// You can add more information to print depending on your needs
+		std::cout << "Position Hash: " << positionHash << std::endl;
+		std::cout << "Occurrences: " << record.occurrences << std::endl;
+		std::cout << "--------------------------" << std::endl;
+	}
+}
+
+void printMoveList(MOVELIST* moveList) {
+	for (int i = 0; i < moveList->count; i++) {
+		cout << i << ") " << moveToString(&(moveList->moves[i])) /* << " with value: " << move_value(bord, &moveList->moves[i], false)*/ << endl; //TODO for testing 
+	}
+}
+
 U64 bitmap_all_white_pawns(Board* bord) {
 	U64 wpawns = bord->pawn & bord->white; // all positions of white pawns
 	U64 doublePawns = (wpawns & twoRow) & ~((bord->white | bord->black) >> 8); // all positions of white pawns able to move 2
@@ -1062,6 +1080,33 @@ U64 all_black_attacks(Board* bord) {
 void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 	U64 destinations = bitmap_white_pawns(position, bord);// &white_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
+	while (destinations & eightRow) {
+		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_QUEEN;
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_KNIGHT;
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_ROOK;
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_BISHOP;
+		m++;
+		movelist->count++;
+		destinations &= (destinations - 1); // Clear the least significant set bit
+	}
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
 		m->src = (Square)position;
@@ -1074,6 +1119,7 @@ void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 		}else {
 			m->special = NOT_SPECIAL;
 		}
+
 		if (((1ULL << 63) >> m->dst) & bord->black) {
 			m->capture = m->dst;
 		}else {
@@ -1088,6 +1134,33 @@ void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 void black_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 	U64 destinations = bitmap_black_pawns(position, bord);// &black_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
+	while (destinations & oneRow) {
+		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_QUEEN;
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_KNIGHT;
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_ROOK;
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_BISHOP;
+		m++;
+		movelist->count++;
+		destinations &= (destinations - 1); // Clear the least significant set bit
+	}
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
 		m->src = (Square)position;
@@ -1413,7 +1486,7 @@ void GenMoveList(MOVELIST* list, Board* bord) {
 }
 
 bool EvaluateQuick(Board* bord) {
-	if (white_plays(bord)) {
+	if (!white_plays(bord)) {
 		return (((bord->king & bord->white) & all_black_attacks(bord))) == 0;
 	}
 	else {
@@ -1422,12 +1495,11 @@ bool EvaluateQuick(Board* bord) {
 	//return OpponentHasMoves(bord);
 }
 
-void addLegalMoveList(MOVELIST* list, Board* bord) {
+void addLegalMoveList(MOVELIST* list, Board* bord, PositionTracker* positionTracker){
 	int i, j;
 	bool okay;
 	MOVELIST list2;
 	list2.count = 0;
-	PositionTracker positionTracker;
 
 	// Generate all moves, including illegal (e.g. put king in check) moves
 	if (white_plays(bord)) {
@@ -1441,23 +1513,23 @@ void addLegalMoveList(MOVELIST* list, Board* bord) {
 	for (i = j = 0; i < list2.count; i++)
 	{
 		copyBoard(bord, &bordCopy);
-		makeMove(&bordCopy, &list2.moves[i],&positionTracker);
-		//positionTracker.removePosition(&bordCopy);
+		makeMove(&bordCopy, &list2.moves[i],positionTracker);
 		okay = EvaluateQuick(bord);
-
-		//popMove(bord, &list2.moves[i]);
+		if (isDraw(&bordCopy, positionTracker) != NOT_DRAW) {
+			okay = false;
+		}
+		positionTracker->removePosition(&bordCopy);
 		if (okay)
 			list->moves[j++] = list2.moves[i];
 	}
 	list->count = j;
 }
 
-void GenLegalMoveList(MOVELIST* list, Board* bord) {
+void GenLegalMoveList(MOVELIST* list, Board* bord, PositionTracker* positionTracker) {
 	int i, j;
 	bool okay;
 	list->count = 0;
 	MOVELIST list2;
-	PositionTracker positionTracker;
 	list2.count = 0;
 
 	// Generate all moves, including illegal (e.g. put king in check) moves
@@ -1467,15 +1539,20 @@ void GenLegalMoveList(MOVELIST* list, Board* bord) {
 	else {
 		black_moves(&list2, bord);
 	}
+
 	Board bordCopy;
 	// Loop copying the proven good ones
 	for (i = j = 0; i < list2.count; i++)
 	{
 		copyBoard(bord, &bordCopy);
-		makeMove(&bordCopy, &list2.moves[i], &positionTracker);
-		//positionTracker.removePosition(&bordCopy);
+		makeMove(&bordCopy, &list2.moves[i], positionTracker);
 		okay = EvaluateQuick(&bordCopy);
-		//popMove(bord, &list2.moves[i]);
+		if (isDraw(&bordCopy, positionTracker) != NOT_DRAW) {
+			//cout << "draw" << endl;
+			//cout << isDraw(&bordCopy, positionTracker) << endl;
+			okay = false;
+		}
+		positionTracker->removePosition(&bordCopy);
 		if (okay)
 			list->moves[j++] = list2.moves[i];
 	}
@@ -1553,7 +1630,9 @@ bool inCheck(Board* bord) {
 }
 
 DRAWTYPE isDraw(Board* bord, PositionTracker* positionTracker) {
+	if (bord->halfmoveClock >= 100) return DRAWTYPE_50MOVE;
 	if (positionTracker->getPositionOccurrences(bord) >= 3) return DRAWTYPE_REPITITION;
+	if (countSetBits(bord->white | bord->black) <= 2) return DRAWTYPE_INSUFFICIENT_AUTO;
 	return NOT_DRAW;
 }
 
@@ -1579,6 +1658,41 @@ std::string convertTo64CharString(U64 rook, U64 knight, U64 bishop, U64 queen, U
 			if ((white & bitMask) != 0) { representativeChar = 'K'; }
 			else if ((black & bitMask) != 0) { representativeChar = 'k'; }
 		}else if ((pawn & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'P'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'p'; }
+		}
+		result.push_back(representativeChar);
+	}
+	return result;
+}
+
+
+std::string convertTo64PieceString(U64 rook, U64 knight, U64 bishop, U64 queen, U64 king, U64 pawn, U64 white, U64 black) { //TODO convert the board to a list of unicode chess pieces
+	std::string result;
+	for (int i = 0; i < 64; ++i) {
+		uint64_t bitMask = ((1ULL << 63) >> i);
+		char representativeChar = '.'; // Default character
+		if ((rook & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = '\u2656'; }  // Unicode white rook
+			else if ((black & bitMask) != 0) { representativeChar = '\u265C'; } //unicode black rook
+		}
+		else if ((knight & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'N'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'n'; }
+		}
+		else if ((bishop & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'B'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'b'; }
+		}
+		else if ((queen & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'Q'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'q'; }
+		}
+		else if ((king & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'K'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'k'; }
+		}
+		else if ((pawn & bitMask) != 0) {
 			if ((white & bitMask) != 0) { representativeChar = 'P'; }
 			else if ((black & bitMask) != 0) { representativeChar = 'p'; }
 		}
@@ -1619,6 +1733,7 @@ void printBitBoard(U64 bitbord, std::string extra) {
 
 void printBoard(Board* bord){
 	std::string temp = convertTo64CharString(bord->rook, bord->knight, bord->bishop, bord->queen, bord->king, bord->pawn, bord->white, bord->black);
+	//std::string temp = convertTo64PieceString(bord->rook, bord->knight, bord->bishop, bord->queen, bord->king, bord->pawn, bord->white, bord->black);
 	//overlay(&temp, bitmap_white_rook(63,bord), 'X');
 	//overlay(&temp, bqcastle, 'O');
 	// 0b000000000000000000000000000000000000000000000000000000000000000
@@ -2172,20 +2287,20 @@ void makeMove(Board* bord, Move* move, PositionTracker* positionTracker) {
 			bord->halfmoveClock += 1;
 			//bord->extra = (bord->extra & ~0x7F) | (((bord->extra & 0x7F) + 1) & 0x7F);
 			if ((((1ULL << 63) >> (A8)) & fromBit) != 0) {
-				bord->whiteKingsideCastle = 0;
-				//bord->extra &= ~(1ULL << 14); // remove white kingside casteling ability
+				bord->blackQueensideCastle = 0;
+				//bord->extra &= ~(1ULL << 14); // remove black queenside casteling ability
 			}
 			else if ((((1ULL << 63) >> (H8)) & fromBit) != 0) {
-				bord->whiteQueensideCastle = 0;
-				//bord->extra &= ~(1ULL << 15); // remove white queenside casteling ability
+				bord->blackKingsideCastle = 0;
+				//bord->extra &= ~(1ULL << 15); // remove black kingside casteling ability
 			}
 			else if ((((1ULL << 63) >> (A1)) & fromBit) != 0) {
-				bord->blackKingsideCastle = 0;
-				//bord->extra &= ~(1ULL << 16); // remove black kingside casteling ability
+				bord->whiteQueensideCastle = 0;
+				//bord->extra &= ~(1ULL << 16); // remove white queenside casteling ability
 			}
 			else if ((((1ULL << 63) >> (H1)) & fromBit) != 0) {
-				bord->blackQueensideCastle = 0;
-				//bord->extra &= ~(1ULL << 17); // remove black queenside casteling ability
+				bord->whiteKingsideCastle = 0;
+				//bord->extra &= ~(1ULL << 17); // remove white kingside casteling ability
 			}
 			bord->rook ^= fromBit; // Clear the source square
 			bord->rook |= toBit;   // Set the destination square

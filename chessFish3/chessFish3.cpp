@@ -37,7 +37,7 @@ void runGame() {
 	cin >> engineNumberB;
 	int i = 0;
 	int depth;
-	if (engineNumberA == 2 || engineNumberB == 2) {
+	if (engineNumberA == 2 || engineNumberB == 2 || engineNumberA == 3 || engineNumberB == 3) {
 		cout << "what depth do you want" << endl;
 		cin >> depth;
 	}
@@ -45,10 +45,10 @@ void runGame() {
 		depth = 0;
 	}
     bool finished = false;
-	while (i < duration & !finished) {
+	while (i < duration && !finished && !isDraw(&bord, &positionTracker)) {
 		cout << "move: " << i+1<< endl;
 		printBoard(&bord);
-        GenLegalMoveList(&moveList, &bord);
+        GenLegalMoveList(&moveList, &bord, &positionTracker);
         if (moveList.count == 0) {
             cout << "white has no more legal moves" << endl;
             finished = true;
@@ -65,12 +65,12 @@ void runGame() {
 			makeMiniMaxOptimizedMove(&bord, &moveList, depth, true, &transpositionTable, &positionTracker);
 		}
         printBoard(&bord);
-        GenLegalMoveList(&moveList, &bord);
+        GenLegalMoveList(&moveList, &bord, &positionTracker);
         if (moveList.count == 0) {
             cout << "black has no more legal moves" << endl;
             finished = true;
         }
-        if (!finished) {
+        if (!finished && !isDraw(&bord, &positionTracker)) {
             if (engineNumberB == 0) {
                 askForMove(&bord, &move, &moveList);
                 cout << "You selected: " << moveToString(&move) << endl;
@@ -85,6 +85,10 @@ void runGame() {
 			}
             i++;
         }
+	}
+	if (isDraw(&bord, &positionTracker)) {
+		cout << "a draw occured" << endl;
+		printPositionRecords(&positionTracker);
 	}
 }
 
@@ -105,12 +109,12 @@ int main()
 	//time_minimax_code();
 	//time_mate_test_code();
 	//runAutomatedTests();
-	runGame();
+	//runGame();
 
 
 	//kingMovesGenerator();
 	//knightMovesGenerator();
 
-	//randomTest();
+	randomTest();
 	return 0;
 }

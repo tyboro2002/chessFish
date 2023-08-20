@@ -78,16 +78,16 @@ namespace std {
 				lhs.king == rhs.king &&
 				lhs.pawn == rhs.pawn &&
 				lhs.white == rhs.white &&
-				lhs.black == rhs.black &&
-				lhs.whiteToPlay == rhs.whiteToPlay &&
-				lhs.whiteKingsideCastle == rhs.whiteKingsideCastle &&
-				lhs.whiteQueensideCastle == rhs.whiteQueensideCastle &&
-				lhs.blackKingsideCastle == rhs.blackKingsideCastle &&
-				lhs.blackQueensideCastle == rhs.blackQueensideCastle &&
-				lhs.enPassentValid == rhs.enPassentValid &&
-				lhs.enPassantTarget == rhs.enPassantTarget &&
-				lhs.halfmoveClock == rhs.halfmoveClock &&
-				lhs.reserved == rhs.reserved;
+				lhs.black == rhs.black;//&&
+				//lhs.whiteToPlay == rhs.whiteToPlay &&
+				//lhs.whiteKingsideCastle == rhs.whiteKingsideCastle &&
+				//lhs.whiteQueensideCastle == rhs.whiteQueensideCastle &&
+				//lhs.blackKingsideCastle == rhs.blackKingsideCastle &&
+				//lhs.blackQueensideCastle == rhs.blackQueensideCastle &&
+				//lhs.enPassentValid == rhs.enPassentValid &&
+				//lhs.enPassantTarget == rhs.enPassantTarget &&
+				//lhs.halfmoveClock == rhs.halfmoveClock &&
+				//lhs.reserved == rhs.reserved;
 
 				//lhs.extra == rhs.extra;
 		}
@@ -217,6 +217,8 @@ private:
 	std::unordered_map<Board, TranspositionTableEntry> table;
 };
 
+void printBoard(Board* bord);
+
 struct PositionRecord {
 	int occurrences;
 	// Add any other information you want to track per position
@@ -233,17 +235,21 @@ public:
 		return positionRecords[positionHash].occurrences >= 3;
 	}
 
-	void removePosition(const Board* position) {
+	void removePosition(Board* position) {
 		size_t positionHash = std::hash<Board>{}(*position);
 		auto it = positionRecords.find(positionHash);
 		if (it != positionRecords.end()) {
 			if (it->second.occurrences > 1) {
 				it->second.occurrences--;
+				return;
 			}
 			else {
 				positionRecords.erase(it);
+				return;
 			}
 		}
+		printBoard(position);
+		std::cout << "bord nie gevonde" << std:: endl;
 	}
 
 	int getPositionOccurrences(const Board* position) const {
@@ -255,9 +261,16 @@ public:
 		return 0;
 	}
 
+	const std::unordered_map<size_t, PositionRecord>& getPositionRecords() const {
+		return positionRecords;
+	}
+
 private:
 	std::unordered_map<size_t, PositionRecord> positionRecords;
 };
+
+void printPositionRecords(const PositionTracker* tracker);
+void printMoveList(MOVELIST* moveList);
 
 int countSetBits(U64 number);
 int getFirst1BitSquare(U64 number);
@@ -269,7 +282,8 @@ void setup(Board* bord);
 void setupEmpty(Board* bord);
 void addPiece(Board* bord, Pieces piece, int square);
 void clearSquare(Board* bord, int square);
-void printBoard(Board* bord);
+
+
 void printBitBoard(U64 bitbord, std::string extra);
 void makeMove(Board* bord, Move* move, PositionTracker* positionTracker);
 void popMove(Board* bord, Move* move);
@@ -307,16 +321,19 @@ U64 bitmap_white_bishop(int square, Board* bord);
 U64 bitmap_black_bishop(int square, Board* bord);
 U64 bitmap_white_knight(int square, Board* bord);
 U64 bitmap_black_knight(int square, Board* bord);
+U64 bitmap_white_queen(int square, Board* bord);
+U64 bitmap_black_queen(int square, Board* bord);
 
 U64 all_white_attacks(Board* bord);
 U64 all_black_attacks(Board* bord);
 
 void GenMoveList(MOVELIST* list, Board* bord);
-void GenLegalMoveList(MOVELIST* list, Board* bord);
-void addLegalMoveList(MOVELIST* list, Board* bord);
+void GenLegalMoveList(MOVELIST* list, Board* bord, PositionTracker* positionTracker);
+void addLegalMoveList(MOVELIST* list, Board* bord, PositionTracker* positionTracker);
 bool OpponentHasMoves(Board* bord);
 bool weHaveMoves(Board* bord);
 bool inCheck(Board* bord);
+DRAWTYPE isDraw(Board* bord, PositionTracker* positionTracker);
 
 U64 squaresBetweenBitmap(int startSquare, int endSquare);
 U64 white_checking_bitmap(Board* bord);

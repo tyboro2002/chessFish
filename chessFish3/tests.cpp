@@ -92,7 +92,7 @@ void move_test_halfmove() {
 	printBoard(&bord);
 
 	for (int i = 0; i < 10; i++) {
-		GenLegalMoveList(&moveList, &bord);
+		GenLegalMoveList(&moveList, &bord, &positionTracker);
 		makeRandomMove(&bord, &moveList, &positionTracker);
 		printBoard(&bord);
 		cout << bord.halfmoveClock << endl;
@@ -141,6 +141,7 @@ void legalMoveTest() {
 	MOVELIST moveList;
 	// Clear move list
 	moveList.count = 0;   // set each field for each move
+	PositionTracker positionTracker;
 
 	/*
 	setupEmpty(&bord);
@@ -160,7 +161,7 @@ void legalMoveTest() {
 	setupEmpty(&bord);
 	std::string fen = "r1bq2r1/b4pk1/p1pp1p2/1p2pPQ1/1P2P1PB/3P4/1PP3P1/R3K2R b - - 0 1";
 	readInFen(&bord, &fen);
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord, &positionTracker);
 	cout << endl;
 }
 
@@ -229,7 +230,7 @@ bool mateInOneTest() {
 	MOVELIST moveList;
 	// Clear move list
 	moveList.count = 0;   // set each field for each move
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord, &positionTracker);
 
 	minimax_root(&bord, 1, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
@@ -258,7 +259,7 @@ bool mateInTwoTest() {
 
 	//white move
 	moveList.count = 0;   // set each field for each move
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord, &positionTracker);
 	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = C1;
@@ -273,7 +274,7 @@ bool mateInTwoTest() {
 
 	//black move
 	moveList.count = 0;   // set each field for each move
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord,&positionTracker);
 	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = G7;
@@ -289,7 +290,7 @@ bool mateInTwoTest() {
 
 	//white move
 	moveList.count = 0;   // set each field for each move
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord, &positionTracker);
 	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = H4;
@@ -320,7 +321,7 @@ bool mateInThreeTest() {
 
 	//white move
 	moveList.count = 0;   // set each field for each move
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord, &positionTracker);
 	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = C4;
@@ -335,7 +336,7 @@ bool mateInThreeTest() {
 
 	//black move
 	moveList.count = 0;   // set each field for each move
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord, &positionTracker);
 	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = C7;
@@ -351,7 +352,7 @@ bool mateInThreeTest() {
 
 	//white move
 	moveList.count = 0;   // set each field for each move
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord, &positionTracker);
 	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = B3;
@@ -366,7 +367,7 @@ bool mateInThreeTest() {
 
 	//black move
 	moveList.count = 0;   // set each field for each move
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord, &positionTracker);
 	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = H4;
@@ -381,7 +382,7 @@ bool mateInThreeTest() {
 
 	//white move
 	moveList.count = 0;   // set each field for each move
-	GenLegalMoveList(&moveList, &bord);
+	GenLegalMoveList(&moveList, &bord, &positionTracker);
 	minimax_root(&bord, depth, true, &moveOut, &moveList, &transpositionTable, &positionTracker);
 	cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList.count << " moves and it was located at position: " << findMoveIndex(&moveList, &moveOut) << endl;
 	move.src = E6;
@@ -479,6 +480,7 @@ void knightMovesGenerator() {
 }
 
 void randomTest() {
+	/*
 	U64 test = 0;
 	for (int i = 0; i < 1000000000; i++) {
 		test = incrementByOne(test);
@@ -488,4 +490,21 @@ void randomTest() {
 		}
 	}
 	cout << "succeed" << endl;
+	*/
+	Board bord;
+	Move move;
+	MOVELIST moveList;
+	TranspositionTable transpositionTable;
+	PositionTracker positionTracker;
+	moveList.count = 0;
+	setupEmpty(&bord);
+	std::string fen = "8/5p2/8/2p5/5K2/2k5/3pp2p/8 b - - 0 1";
+	readInFen(&bord, &fen);
+	printBoard(&bord);
+	//printBitBoard(bitmap_black_queen(F6, &bord), "black queen");
+	black_moves(&moveList,&bord);
+	printMoveList(&moveList);
+	cout << endl;
+	//printBitBoard(bitmap_white_king(E1, &bord), "white king");
+	//printBitBoard(bitmap_black_king(E8, &bord), "black king");
 }
