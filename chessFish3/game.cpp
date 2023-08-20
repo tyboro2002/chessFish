@@ -1393,11 +1393,16 @@ void white_king_moves(int position, MOVELIST* movelist, Board* bord) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
-		if (m->dst == G1) {
-			m->special = SPECIAL_WK_CASTLING;
-		}
-		else if (m->dst == C1) {
-			m->special = SPECIAL_WQ_CASTLING;
+		if (m->src == E1) {
+			if (m->dst == G1) {
+				m->special = SPECIAL_WK_CASTLING;
+			}
+			else if (m->dst == C1) {
+				m->special = SPECIAL_WQ_CASTLING;
+			}
+			else {
+				m->special = NOT_SPECIAL;
+			}
 		}else {
 			m->special = NOT_SPECIAL;
 		}
@@ -1419,13 +1424,17 @@ void black_king_moves(int position, MOVELIST* movelist, Board* bord) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
-		if (m->dst == G8) {
-			m->special = SPECIAL_BK_CASTLING;
-		}
-		else if (m->dst == C8) {
-			m->special = SPECIAL_BQ_CASTLING;
-		}
-		else {
+		if (m->src == E8) {
+			if (m->dst == G8) {
+				m->special = SPECIAL_BK_CASTLING;
+			}
+			else if (m->dst == C8) {
+				m->special = SPECIAL_BQ_CASTLING;
+			}
+			else {
+				m->special = NOT_SPECIAL;
+			}
+		}else {
 			m->special = NOT_SPECIAL;
 		}
 		if (((1ULL << 63) >> m->dst) & bord->white) {
@@ -1680,6 +1689,8 @@ bool inCheck(Board* bord) {
 DRAWTYPE isDraw(Board* bord, PositionTracker* positionTracker) {
 	if (bord->halfmoveClock >= 100) return DRAWTYPE_50MOVE;
 	if (positionTracker->getPositionOccurrences(bord) >= 3) return DRAWTYPE_REPITITION;
+	U64 nonKingPieces = bord->bishop | bord->rook | bord->knight | bord->queen | bord->pawn; //TODO test
+	if((nonKingPieces & bord->white) == 0 || (nonKingPieces & bord->black) == 0) return DRAWTYPE_INSUFFICIENT_AUTO; //TODO test
 	if (countSetBits(bord->white | bord->black) <= 2) return DRAWTYPE_INSUFFICIENT_AUTO;
 	return NOT_DRAW;
 }
