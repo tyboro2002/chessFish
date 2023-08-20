@@ -498,7 +498,7 @@ void randomTest() {
 	PositionTracker positionTracker;
 	moveList.count = 0;
 	setupEmpty(&bord);
-	std::string fen = "8/5p2/8/2p5/5K2/2k5/3pp2p/8 b - - 0 1";
+	std::string fen = "8/5p2/8/2p5/5K2/2k5/3pp2p/5N2 b - - 0 1";
 	readInFen(&bord, &fen);
 	printBoard(&bord);
 	//printBitBoard(bitmap_black_queen(F6, &bord), "black queen");

@@ -1085,24 +1085,48 @@ void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
 		m->special = SPECIAL_PROMOTION_QUEEN;
+		if (((1ULL << 63) >> m->dst) & bord->black) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
 		m++;
 		movelist->count++;
 
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
 		m->special = SPECIAL_PROMOTION_KNIGHT;
+		if (((1ULL << 63) >> m->dst) & bord->black) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
 		m++;
 		movelist->count++;
 
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
 		m->special = SPECIAL_PROMOTION_ROOK;
+		if (((1ULL << 63) >> m->dst) & bord->black) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
 		m++;
 		movelist->count++;
 
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
 		m->special = SPECIAL_PROMOTION_BISHOP;
+		if (((1ULL << 63) >> m->dst) & bord->black) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
 		m++;
 		movelist->count++;
 		destinations &= (destinations - 1); // Clear the least significant set bit
@@ -1139,24 +1163,48 @@ void black_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
 		m->special = SPECIAL_PROMOTION_QUEEN;
+		if (((1ULL << 63) >> m->dst) & bord->white) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
 		m++;
 		movelist->count++;
 
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
 		m->special = SPECIAL_PROMOTION_KNIGHT;
+		if (((1ULL << 63) >> m->dst) & bord->white) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
 		m++;
 		movelist->count++;
 
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
 		m->special = SPECIAL_PROMOTION_ROOK;
+		if (((1ULL << 63) >> m->dst) & bord->white) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
 		m++;
 		movelist->count++;
 
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
 		m->special = SPECIAL_PROMOTION_BISHOP;
+		if (((1ULL << 63) >> m->dst) & bord->white) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
 		m++;
 		movelist->count++;
 		destinations &= (destinations - 1); // Clear the least significant set bit
