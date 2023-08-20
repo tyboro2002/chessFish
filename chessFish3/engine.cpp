@@ -784,7 +784,7 @@ void makeMiniMaxMove(Board* bord, MOVELIST* moveList, int depth, bool maximize, 
     auto endTime = std::chrono::high_resolution_clock::now();
     // Calculate the duration in microseconds (change to other duration units as needed)
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-    cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList->count << " moves and it was located at position: " << findMoveIndex(moveList,&moveOut) << " in: " << duration << " microseconds." << endl;
+    cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList->count << " moves and it was located at position: " << findMoveIndex(moveList,&moveOut) << " in: " << duration / 1000 << " milliseconds." << endl;
     makeMove(bord, &moveOut, positionTracker);
 }
 
@@ -796,7 +796,7 @@ void makeMiniMaxOptimizedMove(Board* bord, MOVELIST* moveList, int depth, bool m
     auto endTime = std::chrono::high_resolution_clock::now();
     // Calculate the duration in microseconds (change to other duration units as needed)
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count();
-    cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList->count << " moves and it was located at position: " << findMoveIndex(moveList, &moveOut) << " in: " << duration << " microseconds." << endl;
+    cout << "the minimax engine selected: " << moveToString(&moveOut) << " out of " << moveList->count << " moves and it was located at position: " << findMoveIndex(moveList, &moveOut) << " in: " << duration/1000 << " milliseconds." << endl;
     makeMove(bord, &moveOut, positionTracker);
 }
 
