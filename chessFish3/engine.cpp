@@ -391,6 +391,8 @@ double move_value(Board* bord, Move* mv, bool endgame) {
     //TODO check if a check if oponent has move is faster and better
     return current_move_value;
 }
+
+/*
 Move* reverseArray(Move* arr, const std::size_t size) { //TODO check
     Move* reversed = new Move[size];
     for (std::size_t i = 0; i < size; i++) {
@@ -398,6 +400,13 @@ Move* reverseArray(Move* arr, const std::size_t size) { //TODO check
     }
     return reversed;
 }
+*/
+void reverseArray(Move* arr, const std::size_t size) {
+    for (std::size_t i = 0; i < size / 2; i++) {
+        std::swap(arr[i], arr[size - 1 - i]);
+    }
+}
+
 void orderMoves(Board* bord, MOVELIST* moveList) { //TODO check
     bool end_game = check_end_game(bord);
 
@@ -414,7 +423,7 @@ void orderMoves(Board* bord, MOVELIST* moveList) { //TODO check
     std::stable_sort(moves, moves + size, compareMoves);
 
     if (!white_plays(bord)) {
-        moves = reverseArray(moves, size);
+        reverseArray(moves, size);
     }
     // Create a new MOVELIST and copy the sorted moves into it
     //MOVELIST orderedMoves;
@@ -544,7 +553,7 @@ void minimax_root(Board* bord, int depth, bool maximize, Move* moveOut, MOVELIST
         Board boardCopy;
         copyBoard(bord, &boardCopy);
         makeMove(&boardCopy, &(ttEntry->bestMove), positionTracker);
-        if (isDraw(&boardCopy, positionTracker)) {
+        if (isDraw(&boardCopy, positionTracker) || (findMoveIndex(moveList, &(ttEntry->bestMove))) == -1) {
             positionTracker->removePosition(&boardCopy);
             goto breakBothIfs; // Jump to the labeled statement
         }
@@ -719,7 +728,7 @@ void minimax_rootOptimized(Board* bord, int depth, bool maximize, Move* moveOut,
         Board boardCopy;
         copyBoard(bord, &boardCopy);
         makeMove(&boardCopy, &(ttEntry->bestMove), positionTracker);
-        if (isDraw(&boardCopy, positionTracker)) {
+        if (isDraw(&boardCopy, positionTracker) || (findMoveIndex(moveList, &(ttEntry->bestMove))) == -1) {
             positionTracker->removePosition(&boardCopy);
             goto breakBothIfs; // Jump to the labeled statement
         }

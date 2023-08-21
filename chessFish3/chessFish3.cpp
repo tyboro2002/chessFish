@@ -88,6 +88,8 @@ void runGame() {
 	}
 	if (isDraw(&bord, &positionTracker)) {
 		cout << "a draw occured" << endl;
+	}
+	if (isDraw(&bord, &positionTracker) && (engineNumberA == 0 || engineNumberB == 0) ) {
 		printPositionRecords(&positionTracker);
 	}
 }
