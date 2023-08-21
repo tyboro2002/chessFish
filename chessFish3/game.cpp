@@ -1564,6 +1564,41 @@ std::string convertTo64CharString(U64 rook, U64 knight, U64 bishop, U64 queen, U
 	return result;
 }
 
+// Function to convert 12 sets of 64-bit numbers to a 64-character string
+std::string convertTo64PiecesString(U64 rook, U64 knight, U64 bishop, U64 queen, U64 king, U64 pawn, U64 white, U64 black) {
+	std::string result;
+	for (int i = 0; i < 64; ++i) {
+		uint64_t bitMask = ((1ULL << 63) >> i);
+		char representativeChar = '.'; // Default character
+		if ((rook & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = '\u2656'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'r'; }
+		}
+		else if ((knight & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'N'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'n'; }
+		}
+		else if ((bishop & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'B'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'b'; }
+		}
+		else if ((queen & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'Q'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'q'; }
+		}
+		else if ((king & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'K'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'k'; }
+		}
+		else if ((pawn & bitMask) != 0) {
+			if ((white & bitMask) != 0) { representativeChar = 'P'; }
+			else if ((black & bitMask) != 0) { representativeChar = 'p'; }
+		}
+		result.push_back(representativeChar);
+	}
+	return result;
+}
+
 /*
 * this function overlays the string with the character for each place where the coresponding bit in bitpatroon is 1 
 * (bitpatroon and string always have same length)
@@ -1596,6 +1631,7 @@ void printBitBoard(U64 bitbord, std::string extra) {
 
 void printBoard(Board* bord){
 	std::string temp = convertTo64CharString(bord->rook, bord->knight, bord->bishop, bord->queen, bord->king, bord->pawn, bord->white, bord->black);
+	//std::string temp = convertTo64PiecesString(bord->rook, bord->knight, bord->bishop, bord->queen, bord->king, bord->pawn, bord->white, bord->black);
 	//overlay(&temp, bitmap_white_rook(63,bord), 'X');
 	//overlay(&temp, bqcastle, 'O');
 	// 0b000000000000000000000000000000000000000000000000000000000000000
