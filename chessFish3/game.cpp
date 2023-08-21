@@ -32,8 +32,8 @@ constexpr U64 wqcastle = 0b00000000000000000000000000000000000000000000000000000
 constexpr U64 bkcastle = 0b0000011000000000000000000000000000000000000000000000000000000000;
 constexpr U64 bqcastle = 0b0111000000000000000000000000000000000000000000000000000000000000;
 
-#define en_passent_target(bord) ((~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))))
-#define white_plays(bord) ((bord->extra &= (1ULL << 18)) != 0)
+#define en_passent_target(bord) (((1ULL<<63) >> (bord->enPassantTarget)) & (bord->enPassentValid ? UINT64_MAX : 0))
+#define white_plays(bord) (bord->whiteToPlay == 1)
 
 // bit manipulation macros
 #define get_bit(bitboard, index) (bitboard & (1ULL << index))
@@ -58,7 +58,16 @@ void copyBoard(const Board* bordIn, Board* bordOut) {
 	bordOut->pawn = bordIn->pawn;
 	bordOut->white = bordIn->white;
 	bordOut->black = bordIn->black;
-	bordOut->extra = bordIn->extra;
+	bordOut->whiteToPlay = bordIn->whiteToPlay;
+	bordOut->whiteKingsideCastle = bordIn->whiteKingsideCastle;
+	bordOut->whiteQueensideCastle = bordIn->whiteQueensideCastle;
+	bordOut->blackKingsideCastle = bordIn->blackKingsideCastle;
+	bordOut->blackQueensideCastle = bordIn->blackQueensideCastle;
+	bordOut->enPassentValid = bordIn->enPassentValid;
+	bordOut->enPassantTarget = bordIn->enPassantTarget;
+	bordOut->halfmoveClock = bordIn->halfmoveClock;
+	bordOut->reserved = bordIn->reserved;
+	//bordOut->extra = bordIn->extra;
 }
 
 int findMoveIndex(MOVELIST* moveList, Move* targetMove) {
@@ -414,12 +423,30 @@ std::string moveToString(Move* move) {
 		captureString;
 }
 
+void printPositionRecords(const PositionTracker* tracker) {
+	for (const auto& entry : tracker->getPositionRecords()) {
+		const size_t positionHash = entry.first;
+		const PositionRecord& record = entry.second;
+
+		// You can add more information to print depending on your needs
+		std::cout << "Position Hash: " << positionHash << std::endl;
+		std::cout << "Occurrences: " << record.occurrences << std::endl;
+		std::cout << "--------------------------" << std::endl;
+	}
+}
+
+void printMoveList(MOVELIST* moveList) {
+	for (int i = 0; i < moveList->count; i++) {
+		cout << i << ") " << moveToString(&(moveList->moves[i])) /* << " with value: " << move_value(bord, &moveList->moves[i], false)*/ << endl; //TODO for testing 
+	}
+}
+
 U64 bitmap_all_white_pawns(Board* bord) {
 	U64 wpawns = bord->pawn & bord->white; // all positions of white pawns
 	U64 doublePawns = (wpawns & twoRow) & ~((bord->white | bord->black) >> 8); // all positions of white pawns able to move 2
 	U64 nonCaptures = (((doublePawns << 8) | (doublePawns << 16) | (wpawns << 8)) & (~(bord->white | bord->black))); // all non capturing moves a pawn can do
 	U64 captures = ((wpawns & (~border)) << 7 | (wpawns & (~border)) << 9 | (wpawns & H) << 9 | (wpawns & A) << 7); // all capturing moves a pawn can do
-	U64 enPassent = (~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))); // all squares that are able to be en passented
+	U64 enPassent = en_passent_target(bord); // all squares that are able to be en passented
 	return (nonCaptures | (captures & bord->black) | (enPassent & captures));
 }
 
@@ -428,7 +455,7 @@ U64 bitmap_all_black_pawns(Board* bord) {
 	U64 doublePawns = (bpawns & sevenRow) & ~((bord->white | bord->black) << 8); // all positions of black pawns able to move 2
 	U64 nonCaptures = (((doublePawns >> 8) | (doublePawns >> 16) | (bpawns >> 8)) & (~(bord->white | bord->black))); // all non capturing moves a pawn can do
 	U64 captures = ((bpawns & (~border)) >> 7 | (bpawns & (~border)) >> 9 | (bpawns & H) >> 7 | (bpawns & A) >> 9); // all capturing moves a pawn can do
-	U64 enPassent = (~((((bord->extra & ((1ULL << 13))) >> 13) << 64) - 1)) & ((((1ULL << 63) >> (((bord->extra >> 7) << 58) >> 58)))); // all squares that are able to be en passented
+	U64 enPassent = en_passent_target(bord); // all squares that are able to be en passented
 	return (nonCaptures | (captures & bord->white) | (enPassent & captures));
 }
 
@@ -454,7 +481,7 @@ U64 bitmap_all_white_king(Board* bord, int diepte) { // TODO test of het gewoon 
 	U64 empty = ~(bord->white | bord->black);
 	U64 castel = nothing;
 	if (countTrailingZeros(wkings) == (63-E8)) {
-		castel = ((((wkcastle & empty) == 6) & ((bord->extra >> 17) & 1)) << 1) | ((((wqcastle & empty) == 112) & ((bord->extra >> 16) & 1) & 1) << 5);//| ((bord->extra >> 15) & 1) | ((bord->extra >> 14) & 1);
+		castel = ((((wkcastle & empty) == 6) & bord->whiteKingsideCastle) << 1) | ((((wqcastle & empty) == 112) & bord->whiteQueensideCastle) << 5);
 	}
 	if (diepte) {
 		return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->white)) | castel);//& (~bitmap_white_king_danger_squares(63 - countTrailingZeros(wkings), bord));
@@ -472,7 +499,7 @@ U64 bitmap_all_black_king(Board* bord, int diepte) {	// TODO test of het gewoon 
 	U64 empty = ~(bord->white | bord->black);
 	U64 castel = nothing;
 	if (countTrailingZeros(bkings) == (63 - E1)) {
-		castel = (((((bkcastle & empty) == 432345564227567616) & ((bord->extra >> 15) & 1)) << 57)) | (((((bqcastle & empty) == 8070450532247928832) & ((bord->extra >> 14) & 1)) << 61));
+		castel = (((((bkcastle & empty) == 432345564227567616) & bord->blackKingsideCastle) << 57)) | (((((bqcastle & empty) == 8070450532247928832) & bord->blackQueensideCastle) << 61));
 	}
 	if (diepte) {
 		return (((all_dirs_non_border | all_dirs_non_corner) & (~bord->black)) | castel);// &(~bitmap_black_king_danger_squares(63 - countTrailingZeros(bkings), bord));
@@ -545,7 +572,7 @@ U64 bitmap_white_king(int position, Board* bord) {
 	U64 empty = ~(bord->white | bord->black);
 	U64 castel = nothing;
 	if (position == E1) {
-		castel = ((((wkcastle & empty) == 6) & ((bord->extra >> 17) & 1)) << 1) | ((((wqcastle & empty) == 112) & ((bord->extra >> 16) & 1) & 1) << 5);//| ((bord->extra >> 15) & 1) | ((bord->extra >> 14) & 1);
+		castel = ((((wkcastle & empty) == 6) & bord->whiteKingsideCastle) << 1) | (((wqcastle & empty) == 112) & bord->whiteQueensideCastle) << 5;//| ((bord->extra >> 15) & 1) | ((bord->extra >> 14) & 1);
 	}
 	return (kingMoves[position] & (~bord->white))|castel;
 	/*
@@ -565,7 +592,7 @@ U64 bitmap_black_king(int position, Board* bord) { //TODO use map lookup
 	U64 empty = ~(bord->white | bord->black);
 	U64 castel = nothing;
 	if (position == E8) {
-		castel = (((((bkcastle & empty) == 432345564227567616) & ((bord->extra >> 15) & 1)) << 57)) | (((((bqcastle & empty) == 8070450532247928832) & ((bord->extra >> 14) & 1)) << 61));
+		castel = ((((bkcastle & empty) == 432345564227567616) & bord->blackKingsideCastle) << 57) | ((((bqcastle & empty) == 8070450532247928832) & bord->blackQueensideCastle) << 61);
 	}
 	return (kingMoves[position] & (~bord->black)) | castel;
 	/*
@@ -1053,6 +1080,57 @@ U64 all_black_attacks(Board* bord) {
 void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 	U64 destinations = bitmap_white_pawns(position, bord);// &white_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
+	while (destinations & eightRow) {
+		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_QUEEN;
+		if (((1ULL << 63) >> m->dst) & bord->black) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_KNIGHT;
+		if (((1ULL << 63) >> m->dst) & bord->black) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_ROOK;
+		if (((1ULL << 63) >> m->dst) & bord->black) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_BISHOP;
+		if (((1ULL << 63) >> m->dst) & bord->black) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
+		m++;
+		movelist->count++;
+		destinations &= (destinations - 1); // Clear the least significant set bit
+	}
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
 		m->src = (Square)position;
@@ -1065,6 +1143,7 @@ void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 		}else {
 			m->special = NOT_SPECIAL;
 		}
+
 		if (((1ULL << 63) >> m->dst) & bord->black) {
 			m->capture = m->dst;
 		}else {
@@ -1079,6 +1158,57 @@ void white_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 void black_pawn_moves(int position, MOVELIST* movelist, Board* bord) {
 	U64 destinations = bitmap_black_pawns(position, bord);// &black_checking_bitmap(bord);
 	Move* m = &movelist->moves[movelist->count];
+	while (destinations & oneRow) {
+		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_QUEEN;
+		if (((1ULL << 63) >> m->dst) & bord->white) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_KNIGHT;
+		if (((1ULL << 63) >> m->dst) & bord->white) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_ROOK;
+		if (((1ULL << 63) >> m->dst) & bord->white) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
+		m++;
+		movelist->count++;
+
+		m->src = (Square)position;
+		m->dst = (Square)(63 - bitIndex);
+		m->special = SPECIAL_PROMOTION_BISHOP;
+		if (((1ULL << 63) >> m->dst) & bord->white) {
+			m->capture = m->dst;
+		}
+		else {
+			m->capture = -52;
+		}
+		m++;
+		movelist->count++;
+		destinations &= (destinations - 1); // Clear the least significant set bit
+	}
 	while (destinations) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
 		m->src = (Square)position;
@@ -1263,11 +1393,16 @@ void white_king_moves(int position, MOVELIST* movelist, Board* bord) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
-		if (m->dst == G1) {
-			m->special = SPECIAL_WK_CASTLING;
-		}
-		else if (m->dst == C1) {
-			m->special = SPECIAL_WQ_CASTLING;
+		if (m->src == E1) {
+			if (m->dst == G1) {
+				m->special = SPECIAL_WK_CASTLING;
+			}
+			else if (m->dst == C1) {
+				m->special = SPECIAL_WQ_CASTLING;
+			}
+			else {
+				m->special = NOT_SPECIAL;
+			}
 		}else {
 			m->special = NOT_SPECIAL;
 		}
@@ -1289,13 +1424,17 @@ void black_king_moves(int position, MOVELIST* movelist, Board* bord) {
 		int bitIndex = countTrailingZeros(destinations); // Get the index of the least significant set bit
 		m->src = (Square)position;
 		m->dst = (Square)(63 - bitIndex);
-		if (m->dst == G8) {
-			m->special = SPECIAL_BK_CASTLING;
-		}
-		else if (m->dst == C8) {
-			m->special = SPECIAL_BQ_CASTLING;
-		}
-		else {
+		if (m->src == E8) {
+			if (m->dst == G8) {
+				m->special = SPECIAL_BK_CASTLING;
+			}
+			else if (m->dst == C8) {
+				m->special = SPECIAL_BQ_CASTLING;
+			}
+			else {
+				m->special = NOT_SPECIAL;
+			}
+		}else {
 			m->special = NOT_SPECIAL;
 		}
 		if (((1ULL << 63) >> m->dst) & bord->white) {
@@ -1404,7 +1543,7 @@ void GenMoveList(MOVELIST* list, Board* bord) {
 }
 
 bool EvaluateQuick(Board* bord) {
-	if ((bord->extra &= (1ULL << 18)) == 0) {
+	if (!white_plays(bord)) {
 		return (((bord->king & bord->white) & all_black_attacks(bord))) == 0;
 	}
 	else {
@@ -1413,7 +1552,7 @@ bool EvaluateQuick(Board* bord) {
 	//return OpponentHasMoves(bord);
 }
 
-void addLegalMoveList(MOVELIST* list, Board* bord) {
+void addLegalMoveList(MOVELIST* list, Board* bord, PositionTracker* positionTracker){
 	int i, j;
 	bool okay;
 	MOVELIST list2;
@@ -1431,16 +1570,19 @@ void addLegalMoveList(MOVELIST* list, Board* bord) {
 	for (i = j = 0; i < list2.count; i++)
 	{
 		copyBoard(bord, &bordCopy);
-		makeMove(&bordCopy, &list2.moves[i]);
+		makeMove(&bordCopy, &list2.moves[i],positionTracker);
 		okay = EvaluateQuick(bord);
-		//popMove(bord, &list2.moves[i]);
+		if (isDraw(&bordCopy, positionTracker) != NOT_DRAW) {
+			okay = false;
+		}
+		positionTracker->removePosition(&bordCopy);
 		if (okay)
 			list->moves[j++] = list2.moves[i];
 	}
 	list->count = j;
 }
 
-void GenLegalMoveList(MOVELIST* list, Board* bord) {
+void GenLegalMoveList(MOVELIST* list, Board* bord, PositionTracker* positionTracker) {
 	int i, j;
 	bool okay;
 	list->count = 0;
@@ -1454,14 +1596,20 @@ void GenLegalMoveList(MOVELIST* list, Board* bord) {
 	else {
 		black_moves(&list2, bord);
 	}
+
 	Board bordCopy;
 	// Loop copying the proven good ones
 	for (i = j = 0; i < list2.count; i++)
 	{
 		copyBoard(bord, &bordCopy);
-		makeMove(&bordCopy, &list2.moves[i]);
+		makeMove(&bordCopy, &list2.moves[i], positionTracker);
 		okay = EvaluateQuick(&bordCopy);
-		//popMove(bord, &list2.moves[i]);
+		if (isDraw(&bordCopy, positionTracker) != NOT_DRAW) {
+			//cout << "draw" << endl;
+			//cout << isDraw(&bordCopy, positionTracker) << endl;
+			okay = false;
+		}
+		positionTracker->removePosition(&bordCopy);
 		if (okay)
 			list->moves[j++] = list2.moves[i];
 	}
@@ -1475,6 +1623,7 @@ bool OpponentHasMoves(Board* bord) {
 	int i, j;
 	bool okay;
 	MOVELIST list2;
+	PositionTracker positionTracker;
 	list2.count = 0;
 
 	// Generate all moves, including illegal (e.g. put king in check) moves
@@ -1489,7 +1638,8 @@ bool OpponentHasMoves(Board* bord) {
 	for (i = j = 0; i < list2.count; i++)
 	{
 		copyBoard(bord, &bordCopy);
-		makeMove(&bordCopy, &list2.moves[i]);
+		makeMove(&bordCopy, &list2.moves[i], &positionTracker);
+		//positionTracker.removePosition(&bordCopy);
 		okay = EvaluateQuick(&bordCopy);
 		if (okay) j++;
 	}
@@ -1503,6 +1653,7 @@ bool weHaveMoves(Board* bord) {
 	int i, j;
 	bool okay;
 	MOVELIST list2;
+	PositionTracker positionTracker;
 	list2.count = 0;
 
 	// Generate all moves, including illegal (e.g. put king in check) moves
@@ -1517,7 +1668,8 @@ bool weHaveMoves(Board* bord) {
 	for (i = j = 0; i < list2.count; i++)
 	{
 		copyBoard(bord, &bordCopy);
-		makeMove(&bordCopy, &list2.moves[i]);
+		makeMove(&bordCopy, &list2.moves[i], &positionTracker);
+		//positionTracker.removePosition(&bordCopy);
 		okay = EvaluateQuick(&bordCopy);
 		if (okay) j++;
 	}
@@ -1532,6 +1684,15 @@ bool inCheck(Board* bord) {
 		return countSetBits(black_checking_pieces(bord)) != 0;
 		//return ((bord->black & bord->king) & all_white_attacks(bord)) != 0;
 	}
+}
+
+DRAWTYPE isDraw(Board* bord, PositionTracker* positionTracker) {
+	if (bord->halfmoveClock >= 100) return DRAWTYPE_50MOVE;
+	if (positionTracker->getPositionOccurrences(bord) >= 3) return DRAWTYPE_REPITITION;
+	U64 nonKingPieces = bord->bishop | bord->rook | bord->knight | bord->queen | bord->pawn; //TODO test
+	if((nonKingPieces & bord->white) == 0 || (nonKingPieces & bord->black) == 0) return DRAWTYPE_INSUFFICIENT_AUTO; //TODO test
+	if (countSetBits(bord->white | bord->black) <= 2) return DRAWTYPE_INSUFFICIENT_AUTO;
+	return NOT_DRAW;
 }
 
 // Function to convert 12 sets of 64-bit numbers to a 64-character string
@@ -1564,15 +1725,15 @@ std::string convertTo64CharString(U64 rook, U64 knight, U64 bishop, U64 queen, U
 	return result;
 }
 
-// Function to convert 12 sets of 64-bit numbers to a 64-character string
-std::string convertTo64PiecesString(U64 rook, U64 knight, U64 bishop, U64 queen, U64 king, U64 pawn, U64 white, U64 black) {
+
+std::string convertTo64PieceString(U64 rook, U64 knight, U64 bishop, U64 queen, U64 king, U64 pawn, U64 white, U64 black) { //TODO convert the board to a list of unicode chess pieces
 	std::string result;
 	for (int i = 0; i < 64; ++i) {
 		uint64_t bitMask = ((1ULL << 63) >> i);
 		char representativeChar = '.'; // Default character
 		if ((rook & bitMask) != 0) {
-			if ((white & bitMask) != 0) { representativeChar = '\u2656'; }
-			else if ((black & bitMask) != 0) { representativeChar = 'r'; }
+			if ((white & bitMask) != 0) { representativeChar = '\u2656'; }  // Unicode white rook
+			else if ((black & bitMask) != 0) { representativeChar = '\u265C'; } //unicode black rook
 		}
 		else if ((knight & bitMask) != 0) {
 			if ((white & bitMask) != 0) { representativeChar = 'N'; }
@@ -1631,12 +1792,12 @@ void printBitBoard(U64 bitbord, std::string extra) {
 
 void printBoard(Board* bord){
 	std::string temp = convertTo64CharString(bord->rook, bord->knight, bord->bishop, bord->queen, bord->king, bord->pawn, bord->white, bord->black);
-	//std::string temp = convertTo64PiecesString(bord->rook, bord->knight, bord->bishop, bord->queen, bord->king, bord->pawn, bord->white, bord->black);
+	//std::string temp = convertTo64PieceString(bord->rook, bord->knight, bord->bishop, bord->queen, bord->king, bord->pawn, bord->white, bord->black);
 	//overlay(&temp, bitmap_white_rook(63,bord), 'X');
 	//overlay(&temp, bqcastle, 'O');
 	// 0b000000000000000000000000000000000000000000000000000000000000000
 	std::cout << endl;
-	if ((bord->extra & 1ULL << 18) != 0) {
+	if (white_plays(bord)) {
 		cout << "white to play:" << endl;
 	}
 	else {
@@ -1669,8 +1830,17 @@ void setup(Board* bord) {
 	bord->pawn   = 0b0000000011111111000000000000000000000000000000001111111100000000;
 	bord->white  = 0b0000000000000000000000000000000000000000000000001111111111111111;
 	bord->black  = 0b1111111111111111000000000000000000000000000000000000000000000000;
-	// extra setup
-	bord->extra = 0b1111100000000000000;
+	//extra setup
+	bord->whiteToPlay = 1;
+	bord->whiteKingsideCastle = 1;
+	bord->whiteQueensideCastle = 1;
+	bord->blackKingsideCastle = 1;
+	bord->blackQueensideCastle = 1;
+	bord->enPassentValid = 0;
+	bord->enPassantTarget = 0;
+	bord->halfmoveClock = 0;
+	bord->reserved = 0;
+	//bord->extra = 0b1111100000000000000;
 }
 
 void setupEmpty(Board* bord) {
@@ -1683,7 +1853,16 @@ void setupEmpty(Board* bord) {
 	bord->white  = 0b0000000000000000000000000000000000000000000000000000000000000000;
 	bord->black  = 0b0000000000000000000000000000000000000000000000000000000000000000;
 	// extra setup
-	bord->extra = 0b1111100000000000000;
+	bord->whiteToPlay = 1;
+	bord->whiteKingsideCastle = 1;
+	bord->whiteQueensideCastle = 1;
+	bord->blackKingsideCastle = 1;
+	bord->blackQueensideCastle = 1;
+	bord->enPassentValid = 0;
+	bord->enPassantTarget = 0;
+	bord->halfmoveClock = 0;
+	bord->reserved = 0;
+	//bord->extra = 0b1111100000000000000;
 }
 
 void addPiece(Board* bord, Pieces piece, int square) {
@@ -2059,26 +2238,40 @@ void readInFen(Board* bord, std::string* fen) {
 
 			// Extract the substring starting from the character immediately after the space
 			std::string result = fen->substr(spacePos + 1);
-			bord->extra = 0b0000000000000000000;
+			//bord->extra = 0b0000000000000000000;
+			bord->whiteToPlay = 0;
+			bord->whiteKingsideCastle = 0;
+			bord->whiteQueensideCastle = 0;
+			bord->blackKingsideCastle = 0;
+			bord->blackQueensideCastle = 0;
+			bord->enPassentValid = 0;
+			bord->enPassantTarget = 0;
+			bord->halfmoveClock = 0;
+			bord->reserved = 0;
 			if (result.front() == 'w') {
-				bord->extra |= 0b1000000000000000000;
+				bord->whiteToPlay = 1;
+				//bord->extra |= 0b1000000000000000000;
 			}
 			result.erase(0, 2);
 			if (result.front() == 'K') {
 				result.erase(0, 1);
-				bord->extra |= 0b0100000000000000000;
+				bord->whiteKingsideCastle = 1;
+				//bord->extra |= 0b0100000000000000000;
 			}
 			if (result.front() == 'Q') {
 				result.erase(0, 1);
-				bord->extra |= 0b0010000000000000000;
+				bord->whiteQueensideCastle = 1;
+				//bord->extra |= 0b0010000000000000000;
 			}
 			if (result.front() == 'k') {
 				result.erase(0, 1);
-				bord->extra |= 0b0001000000000000000;
+				bord->blackKingsideCastle = 1;
+				//bord->extra |= 0b0001000000000000000;
 			}
 			if (result.front() == 'q') {
 				result.erase(0, 1);
-				bord->extra |= 0b0000100000000000000;
+				bord->blackQueensideCastle = 1;
+				//bord->extra |= 0b0000100000000000000;
 			}
 			if (result.front() == '-') {
 				result.erase(0, 1);
@@ -2088,15 +2281,18 @@ void readInFen(Board* bord, std::string* fen) {
 				std::string temp = result.substr(0,2);
 				Square enPassent = stringToSquare(temp);
 				result.erase(0, 3);
-				bord->extra |= 0b0000010000000000000;
-				bord->extra |= (enPassent << 7);
+				bord->enPassentValid = 1;
+				bord->enPassantTarget = enPassent;
+				//bord->extra |= 0b0000010000000000000;
+				//bord->extra |= (enPassent << 7);
 			}
 			else {
 				result.erase(0, 2);
 			}
 			std::string halfm = result.substr(0, result.find(' '));
 			int halfmcount = std::stoi(halfm);
-			bord->extra |= (halfmcount);
+			bord->halfmoveClock = halfmcount;
+			//bord->extra |= (halfmcount);
 
 
 			//std::cout << std::bitset<19>(bord->extra) << std::endl;
@@ -2107,12 +2303,13 @@ void readInFen(Board* bord, std::string* fen) {
 }
 
 // Function to make a move
-void makeMove(Board* bord, Move* move) {
+void makeMove(Board* bord, Move* move, PositionTracker* positionTracker) {
 	//bord->extra = (bord->extra & ~0x7F) | ((bord->extra + 1) & 0x7F); //TODO halfmove clock
 	//lastCapturedPiece = NOPIECE; //TODO needed if i make a popMove
 	// Update the pawns bitboard to reflect the move
 	U64 fromBit = ((1ULL << 63) >> move->src);
 	U64 toBit = ((1ULL << 63) >> move->dst);
+	bool capture = false;
 
 	if ((move->special == NOT_SPECIAL) ||
 		( move->special == SPECIAL_WPAWN_2SQUARES) ||
@@ -2134,6 +2331,7 @@ void makeMove(Board* bord, Move* move) {
 			bord->pawn &= ~toBit;
 			bord->white &= ~toBit;
 			bord->black &= ~toBit;
+			capture = true;
 		}
 
 		if ((bord->white & fromBit) != 0) {
@@ -2145,54 +2343,72 @@ void makeMove(Board* bord, Move* move) {
 		}
 
 		if ((bord->rook & fromBit) != 0) {
+			bord->halfmoveClock += 1;
 			//bord->extra = (bord->extra & ~0x7F) | (((bord->extra & 0x7F) + 1) & 0x7F);
 			if ((((1ULL << 63) >> (A8)) & fromBit) != 0) {
-				bord->extra &= ~(1ULL << 14); // remove white kingside casteling ability
+				bord->blackQueensideCastle = 0;
+				//bord->extra &= ~(1ULL << 14); // remove black queenside casteling ability
 			}
 			else if ((((1ULL << 63) >> (H8)) & fromBit) != 0) {
-				bord->extra &= ~(1ULL << 15); // remove white queenside casteling ability
+				bord->blackKingsideCastle = 0;
+				//bord->extra &= ~(1ULL << 15); // remove black kingside casteling ability
 			}
 			else if ((((1ULL << 63) >> (A1)) & fromBit) != 0) {
-				bord->extra &= ~(1ULL << 16); // remove black kingside casteling ability
+				bord->whiteQueensideCastle = 0;
+				//bord->extra &= ~(1ULL << 16); // remove white queenside casteling ability
 			}
 			else if ((((1ULL << 63) >> (H1)) & fromBit) != 0) {
-				bord->extra &= ~(1ULL << 17); // remove black queenside casteling ability
+				bord->whiteKingsideCastle = 0;
+				//bord->extra &= ~(1ULL << 17); // remove white kingside casteling ability
 			}
 			bord->rook ^= fromBit; // Clear the source square
 			bord->rook |= toBit;   // Set the destination square
 		}else if ((bord->knight & fromBit) != 0) {
+			bord->halfmoveClock += 1;
 			bord->knight ^= fromBit; // Clear the source square
 			bord->knight |= toBit;   // Set the destination square
 		}else if ((bord->bishop & fromBit) != 0) {
+			bord->halfmoveClock += 1;
 			bord->bishop ^= fromBit; // Clear the source square
 			bord->bishop |= toBit;   // Set the destination square
 		}else if ((bord->queen & fromBit) != 0) {
+			bord->halfmoveClock += 1;
 			bord->queen ^= fromBit; // Clear the source square
 			bord->queen |= toBit;   // Set the destination square
 		}else if ((bord->king & fromBit) != 0) {
-			if ((bord->white & fromBit) != 0) {
-				bord->extra &= ~((((1ULL << 2) - 1) << 16));
+			bord->halfmoveClock += 1;
+			if ((bord->white & fromBit) != 0) { //remove white casteling ability
+				bord->whiteKingsideCastle = 0;
+				bord->whiteQueensideCastle = 0;
+				//bord->extra &= ~((((1ULL << 2) - 1) << 16));
 			}
-			else if ((bord->black & fromBit) != 0) {
-				bord->extra &= ~((((1ULL << 2) - 1) << 14));
+			else if ((bord->black & fromBit) != 0) { //remove black casteling ability
+				bord->blackKingsideCastle = 0;
+				bord->blackQueensideCastle = 0;
+				//bord->extra &= ~((((1ULL << 2) - 1) << 14));
 			}
 			bord->king ^= fromBit; // Clear the source square
 			bord->king |= toBit;   // Set the destination square
 		}else if ((bord->pawn & fromBit) != 0) {
+			bord->halfmoveClock = 0;
 			bord->pawn ^= fromBit; // Clear the source square
 			bord->pawn |= toBit;   // Set the destination square
 		}
 	}
-
-	bord->extra &= ~((((1ULL << 7) - 1) << 7)); // remove en passent target
+	bord->enPassentValid = 0;
+	//bord->extra &= ~((((1ULL << 7) - 1) << 7)); // remove en passent target
 	if (move->special != NOT_SPECIAL) {
 		if (move->special == SPECIAL_WPAWN_2SQUARES) {
-			bord->extra |= ((1ULL << 13));
-			bord->extra |= ((move->dst + 8) << 7);
+			bord->enPassentValid = 1;
+			bord->enPassantTarget = (move->dst + 8);
+			//bord->extra |= ((1ULL << 13));
+			//bord->extra |= ((move->dst + 8) << 7);
 		}
 		else if (move->special == SPECIAL_BPAWN_2SQUARES) {
-			bord->extra |= ((1ULL << 13));
-			bord->extra |= ((move->dst - 8) << 7);
+			bord->enPassentValid = 1;
+			bord->enPassantTarget = (move->dst - 8);
+			//bord->extra |= ((1ULL << 13));
+			//bord->extra |= ((move->dst - 8) << 7);
 		}
 		else if (move->special == SPECIAL_WEN_PASSANT) {
 			U64 enPassentBit = ((1ULL << 63) >> (move->dst + 8));
@@ -2208,8 +2424,10 @@ void makeMove(Board* bord, Move* move) {
 			bord->white &= ~enPassentBit;
 			bord->black &= ~enPassentBit;
 		}
-		else if (move->special == SPECIAL_WK_CASTLING) {
-			bord->extra &= ~((((1ULL << 2) - 1) << 16));
+		else if (move->special == SPECIAL_WK_CASTLING) { //remove white casteling ability
+			bord->whiteKingsideCastle = 0;
+			bord->whiteQueensideCastle = 0;
+			//bord->extra &= ~((((1ULL << 2) - 1) << 16));
 			U64 rookSQ = ((1ULL << 63) >> (H1));
 			bord->rook &= ~rookSQ;
 			bord->white &= ~rookSQ;
@@ -2224,8 +2442,10 @@ void makeMove(Board* bord, Move* move) {
 			bord->king |= newKingSQ;
 			bord->white |= newKingSQ;
 		}
-		else if (move->special == SPECIAL_BK_CASTLING) {
-			bord->extra &= ~((((1ULL << 2) - 1) << 14));
+		else if (move->special == SPECIAL_BK_CASTLING) { //remove black casteling ability
+			bord->blackKingsideCastle = 0;
+			bord->blackQueensideCastle = 0;
+			//bord->extra &= ~((((1ULL << 2) - 1) << 14));
 			U64 rookSQ = ((1ULL << 63) >> (H8));
 			bord->rook &= ~rookSQ;
 			bord->black &= ~rookSQ;
@@ -2240,8 +2460,10 @@ void makeMove(Board* bord, Move* move) {
 			bord->king |= newKingSQ;
 			bord->black |= newKingSQ;
 		}
-		else if (move->special == SPECIAL_WQ_CASTLING) {
-			bord->extra &= ~((((1ULL << 2) - 1) << 16));
+		else if (move->special == SPECIAL_WQ_CASTLING) { //remove white casteling ability
+			bord->whiteKingsideCastle = 0;
+			bord->whiteQueensideCastle = 0;
+			//bord->extra &= ~((((1ULL << 2) - 1) << 16));
 			U64 rookSQ = ((1ULL << 63) >> (A1));
 			bord->rook &= ~rookSQ;
 			bord->white &= ~rookSQ;
@@ -2256,8 +2478,10 @@ void makeMove(Board* bord, Move* move) {
 			bord->king |= newKingSQ;
 			bord->white |= newKingSQ;
 		}
-		else if (move->special == SPECIAL_BQ_CASTLING) {
-			bord->extra &= ~((((1ULL << 2) - 1) << 14));
+		else if (move->special == SPECIAL_BQ_CASTLING) { //remove black casteling ability
+			bord->blackKingsideCastle = 0;
+			bord->blackQueensideCastle = 0;
+			//bord->extra &= ~((((1ULL << 2) - 1) << 14));
 			U64 rookSQ = ((1ULL << 63) >> (A8));
 			bord->rook &= ~rookSQ;
 			bord->black &= ~rookSQ;
@@ -2273,7 +2497,7 @@ void makeMove(Board* bord, Move* move) {
 			bord->black |= newKingSQ;
 		}
 		else if (move->special == SPECIAL_PROMOTION_BISHOP) {
-			if ((bord->extra &= (1ULL << 18)) != 0) {
+			if (!white_plays(bord)) {
 				U64 promotionPawn = oneRow & bord->pawn & bord->black;
 				bord->pawn &= ~promotionPawn;
 				bord->bishop |= promotionPawn;
@@ -2285,7 +2509,7 @@ void makeMove(Board* bord, Move* move) {
 			}
 		}
 		else if (move->special == SPECIAL_PROMOTION_KNIGHT) {
-			if ((bord->extra &= (1ULL << 18)) != 0) {
+			if (!white_plays(bord)) {
 				U64 promotionPawn = oneRow & bord->pawn & bord->black;
 				bord->pawn &= ~promotionPawn;
 				bord->knight |= promotionPawn;
@@ -2297,7 +2521,7 @@ void makeMove(Board* bord, Move* move) {
 			}
 		}
 		else if (move->special == SPECIAL_PROMOTION_QUEEN) {
-			if ((bord->extra &= (1ULL << 18)) != 0) {
+			if (!white_plays(bord)) {
 				U64 promotionPawn = oneRow & bord->pawn & bord->black;
 				bord->pawn &= ~promotionPawn;
 				bord->queen |= promotionPawn;
@@ -2309,7 +2533,7 @@ void makeMove(Board* bord, Move* move) {
 			}
 		}
 		else if (move->special == SPECIAL_PROMOTION_ROOK) {
-			if ((bord->extra &= (1ULL << 18)) != 0) {
+			if (!white_plays(bord)) {
 				U64 promotionPawn = oneRow & bord->pawn & bord->black;
 				bord->pawn &= ~promotionPawn;
 				bord->rook |= promotionPawn;
@@ -2321,7 +2545,11 @@ void makeMove(Board* bord, Move* move) {
 			}
 		}
 	}
-	bord->extra ^= (1ULL << 18); // swap playing player
+	bord->whiteToPlay = bord->whiteToPlay ? 0 : 1;
+	//bord->extra ^= (1ULL << 18); // swap playing player
+	positionTracker->addPosition(bord);
+	if (capture) bord->halfmoveClock = 0;
+
 }
 
 /*
