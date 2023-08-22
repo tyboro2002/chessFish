@@ -3,11 +3,19 @@
 #include <random>
 #include <map>
 #include <chrono>
+#include <array>
 
 using namespace std;
 
 #define white_plays(bord) (bord->whiteToPlay)
 #define en_passent_target(bord) (((1ULL<<63) >> (bord->enPassantTarget)) & (bord->enPassentValid ? UINT64_MAX : 0))
+
+constexpr const char engine0[] = "the human player";
+constexpr const char engine1[] = "the random engine";
+constexpr const char engine2[] = "the minimax engine";
+constexpr const char engine3[] = "the minimax optimized engine";
+constexpr std::array<const char*, 4> engines = { engine0, engine1, engine2, engine3 };
+
 
 const map<Pieces, int> piece_score_dic = {
     //white
@@ -563,6 +571,7 @@ void minimax_root(Board* bord, int depth, bool maximize, Move* moveOut, MOVELIST
         moveOut->dst = (ttEntry->bestMove).dst;
         moveOut->special = (ttEntry->bestMove).special;
         moveOut->capture = (ttEntry->bestMove).capture;
+        cout << "used transposition table" << endl;
         return;
     }
     breakBothIfs:
@@ -737,6 +746,7 @@ void minimax_rootOptimized(Board* bord, int depth, bool maximize, Move* moveOut,
         moveOut->dst = (ttEntry->bestMove).dst;
         moveOut->special = (ttEntry->bestMove).special;
         moveOut->capture = (ttEntry->bestMove).capture;
+        cout << "used transposition table" << endl;
         return;
     }
     breakBothIfs:
@@ -839,8 +849,6 @@ void makeRandomMove(Board* bord, MOVELIST* moveList, PositionTracker* positionTr
 }
 
 void printEngines() {
-    cout << "0) the human player" << endl;
-    cout << "1) the random engine" << endl;
-    cout << "2) the minimax engine" << endl;
-    cout << "3) the minimax optimized engine" << endl;
+    int i = 0;
+    for (const char* engine : engines) printf("%d) %s.\n", i++, engine);
 }
