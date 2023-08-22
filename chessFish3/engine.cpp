@@ -797,6 +797,9 @@ void minimax_rootOptimized(Board* bord, int depth, bool maximize, Move* moveOut,
 
 void makeMiniMaxMove(Board* bord, MOVELIST* moveList, int depth, bool maximize, TranspositionTable* transpositionTable, PositionTracker* positionTracker) {
     Move moveOut;
+
+    transpositionTable->printInfo();
+
     auto startTime = std::chrono::high_resolution_clock::now();
     minimax_root(bord, depth, maximize, &moveOut, moveList, transpositionTable, positionTracker);
     // Get the ending timestamp
@@ -809,6 +812,9 @@ void makeMiniMaxMove(Board* bord, MOVELIST* moveList, int depth, bool maximize, 
 
 void makeMiniMaxOptimizedMove(Board* bord, MOVELIST* moveList, int depth, bool maximize, TranspositionTable* transpositionTable, PositionTracker* positionTracker) {
     Move moveOut;
+    
+    transpositionTable->printInfo();
+
     auto startTime = std::chrono::high_resolution_clock::now();
     minimax_rootOptimized(bord, depth, maximize, &moveOut, moveList, transpositionTable, positionTracker);
     // Get the ending timestamp

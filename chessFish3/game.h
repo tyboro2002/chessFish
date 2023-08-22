@@ -201,12 +201,36 @@ struct TranspositionTableEntry {
 
 class TranspositionTable {
 public:
-	void store(Board* bord, const int score, const int depth, Move bestMove) {
-		table[*bord] = { score, depth, bestMove };
+	TranspositionTable() : currentSize(0), maxSizeBytes(100 * 1024 * 1024) {} // 100MB
+
+	void store(Board* board, const int score, const int depth, Move bestMove) {
+		size_t hashValue = std::hash<Board>{}(*board);
+		TranspositionTableEntry entry = { score, depth, bestMove };
+
+		// If adding this entry will exceed the max size, evict some entries
+		while (currentSize + sizeof(entry) > maxSizeBytes) {
+			evictOldestEntry();
+		}
+
+		// Store the entry and update the size
+		table[hashValue] = entry;
+		currentSize += sizeof(entry);
 	}
 
-	TranspositionTableEntry* lookup(Board* bord) {
-		auto it = table.find(*bord);
+	size_t getCurrentSize() {
+		return currentSize;
+	}
+
+	size_t getNumElements() const {
+		return table.size();
+	}
+	void printInfo() const {
+		std::cout << "Current size of TranspositionTable: " << currentSize << " bytes" << std::endl;
+		std::cout << "Number of elements in TranspositionTable: " << table.size() << std::endl;
+	}
+
+	TranspositionTableEntry* lookup(Board* board) {
+		auto it = table.find(std::hash<Board>{}(*board));
 		if (it != table.end()) {
 			return &(it->second);
 		}
@@ -214,7 +238,17 @@ public:
 	}
 
 private:
-	std::unordered_map<Board, TranspositionTableEntry> table;
+	std::unordered_map<size_t, TranspositionTableEntry> table;
+	size_t currentSize;
+	const size_t maxSizeBytes;
+
+	void evictOldestEntry() {
+		if (!table.empty()) {
+			size_t oldestKey = table.begin()->first;
+			currentSize -= sizeof(table[oldestKey]);
+			table.erase(oldestKey);
+		}
+	}
 };
 
 void printBoard(Board* bord);
