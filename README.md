@@ -1,4 +1,15 @@
-# chessFish
+
+  /$$$$$$  /$$                                    /$$$$$$$$ /$$           /$$      
+ /$$__  $$| $$                                   | $$_____/|__/          | $$      
+| $$  \__/| $$$$$$$   /$$$$$$   /$$$$$$$ /$$$$$$$| $$       /$$  /$$$$$$$| $$$$$$$ 
+| $$      | $$__  $$ /$$__  $$ /$$_____//$$_____/| $$$$$   | $$ /$$_____/| $$__  $$
+| $$      | $$  \ $$| $$$$$$$$|  $$$$$$|  $$$$$$ | $$__/   | $$|  $$$$$$ | $$  \ $$
+| $$    $$| $$  | $$| $$_____/ \____  $$\____  $$| $$      | $$ \____  $$| $$  | $$
+|  $$$$$$/| $$  | $$|  $$$$$$$ /$$$$$$$//$$$$$$$/| $$      | $$ /$$$$$$$/| $$  | $$
+ \______/ |__/  |__/ \_______/|_______/|_______/ |__/      |__/|_______/ |__/  |__/
+                                                                                   
+                                                                                   
+                                                                                   
 This is an implementation of the chess game (in progres) to use in a chess engine.
 The implementation use's cpp and bitboards to make the move generation faster and so give the engine more time to think about the moves in its algorithm.
 
